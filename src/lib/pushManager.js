@@ -46,36 +46,52 @@ export async function requestPermission() {
  */
 export async function subscribeToPush(userId) {
   if (!isPushSupported()) {
-    console.warn('Push notifications not supported')
+    console.warn('[Push] Push notifications not supported')
     return null
   }
 
   if (!VAPID_PUBLIC_KEY) {
-    console.warn('VAPID public key not configured')
+    console.warn('[Push] VAPID public key not configured! Check VITE_VAPID_PUBLIC_KEY env var.')
     return null
   }
 
+  console.log('[Push] VAPID key present, length:', VAPID_PUBLIC_KEY.length)
+
   try {
+    // Step 1: Request permission (must be inside user gesture on mobile)
+    console.log('[Push] Requesting notification permission...')
     const permission = await requestPermission()
+    console.log('[Push] Permission result:', permission)
     if (permission !== 'granted') {
-      console.log('Notification permission denied')
+      console.warn('[Push] Notification permission not granted:', permission)
       return null
     }
 
+    // Step 2: Wait for service worker to be ready
+    console.log('[Push] Waiting for service worker ready...')
     const registration = await navigator.serviceWorker.ready
+    console.log('[Push] Service worker ready, scope:', registration.scope)
     
-    // Check if already subscribed
+    // Step 3: Check existing subscription
     let subscription = await registration.pushManager.getSubscription()
+    console.log('[Push] Existing subscription:', subscription ? 'YES' : 'NO')
     
     if (!subscription) {
+      console.log('[Push] Creating new push subscription...')
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       })
+      console.log('[Push] New subscription created:', subscription.endpoint)
     }
 
-    // Save subscription to Supabase
+    // Step 4: Save subscription to Supabase
     const subscriptionJSON = subscription.toJSON()
+    console.log('[Push] Saving to Supabase for user:', userId)
+    console.log('[Push] Endpoint:', subscriptionJSON.endpoint)
+    console.log('[Push] p256dh length:', subscriptionJSON.keys?.p256dh?.length)
+    console.log('[Push] auth length:', subscriptionJSON.keys?.auth?.length)
+
     const { error } = await supabase.from('push_subscriptions').upsert(
       {
         user_id: userId,
@@ -87,14 +103,15 @@ export async function subscribeToPush(userId) {
     )
 
     if (error) {
-      console.error('Failed to save push subscription:', error)
+      console.error('[Push] Failed to save push subscription:', error)
       return null
     }
 
-    console.log('Push subscription saved successfully')
+    console.log('[Push] ✅ Push subscription saved successfully!')
     return subscription
   } catch (err) {
-    console.error('Push subscription failed:', err)
+    console.error('[Push] Push subscription FAILED:', err)
+    console.error('[Push] Error name:', err?.name, '| message:', err?.message)
     return null
   }
 }

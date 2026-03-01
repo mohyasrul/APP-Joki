@@ -3,6 +3,9 @@ import { Bell, X } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { isPushSupported, checkSubscription, subscribeToPush, getPermissionStatus } from '../lib/pushManager'
 
+const STORAGE_KEY_SUBSCRIBED = 'push-subscribed'
+const STORAGE_KEY_DISMISSED = 'push-prompt-dismissed'
+
 /**
  * Floating banner that prompts the user to enable push notifications.
  * Only shows when:
@@ -10,7 +13,7 @@ import { isPushSupported, checkSubscription, subscribeToPush, getPermissionStatu
  * - User is logged in
  * - No existing push subscription
  * - Permission is not 'denied'
- * - User hasn't dismissed the banner this session
+ * - User hasn't dismissed the banner permanently
  * 
  * Requires explicit user tap → satisfies mobile Chrome user-gesture requirement.
  */
@@ -18,36 +21,68 @@ export default function PushPrompt() {
     const { user } = useAuth()
     const [visible, setVisible] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [status, setStatus] = useState('')
 
     useEffect(() => {
         if (!user) return
-        if (!isPushSupported()) return
+        if (!isPushSupported()) {
+            console.log('[PushPrompt] Push not supported in this browser')
+            return
+        }
 
-        // Don't show if user previously dismissed (this session)
-        if (sessionStorage.getItem('push-prompt-dismissed')) return
+        // Don't show if already subscribed successfully
+        if (localStorage.getItem(STORAGE_KEY_SUBSCRIBED) === user.id) return
+
+        // Don't show if user dismissed (persists across sessions)
+        const dismissed = localStorage.getItem(STORAGE_KEY_DISMISSED)
+        if (dismissed) {
+            // Re-show after 3 days
+            const dismissedAt = parseInt(dismissed, 10)
+            if (Date.now() - dismissedAt < 3 * 24 * 60 * 60 * 1000) return
+        }
 
         // Don't show if permission already denied (can't re-ask)
-        if (getPermissionStatus() === 'denied') return
+        if (getPermissionStatus() === 'denied') {
+            console.log('[PushPrompt] Notification permission denied by browser')
+            return
+        }
 
-        // Check if already subscribed
+        // Check if already subscribed via PushManager
         checkSubscription().then((hasSub) => {
-            if (!hasSub) setVisible(true)
+            if (hasSub) {
+                // Already subscribed, mark it
+                localStorage.setItem(STORAGE_KEY_SUBSCRIBED, user.id)
+            } else {
+                console.log('[PushPrompt] No push subscription found, showing banner')
+                setVisible(true)
+            }
         })
     }, [user])
 
     const handleEnable = async () => {
         setLoading(true)
+        setStatus('Meminta izin...')
         try {
+            console.log('[PushPrompt] User tapped Aktifkan, calling subscribeToPush...')
             const result = await subscribeToPush(user.id)
             if (result) {
-                setVisible(false)
+                console.log('[PushPrompt] Push subscription SUCCESS:', result.endpoint)
+                localStorage.setItem(STORAGE_KEY_SUBSCRIBED, user.id)
+                localStorage.removeItem(STORAGE_KEY_DISMISSED)
+                setStatus('Berhasil! ✓')
+                setTimeout(() => setVisible(false), 1500)
             } else {
-                // Permission denied or failed
-                setVisible(false)
-                sessionStorage.setItem('push-prompt-dismissed', '1')
+                console.warn('[PushPrompt] subscribeToPush returned null')
+                setStatus('Gagal - cek izin browser')
+                setTimeout(() => {
+                    setVisible(false)
+                    localStorage.setItem(STORAGE_KEY_DISMISSED, String(Date.now()))
+                }, 2000)
             }
-        } catch {
-            setVisible(false)
+        } catch (err) {
+            console.error('[PushPrompt] Error:', err)
+            setStatus('Error: ' + (err?.message || 'Unknown'))
+            setTimeout(() => setVisible(false), 2000)
         } finally {
             setLoading(false)
         }
@@ -55,7 +90,7 @@ export default function PushPrompt() {
 
     const handleDismiss = () => {
         setVisible(false)
-        sessionStorage.setItem('push-prompt-dismissed', '1')
+        localStorage.setItem(STORAGE_KEY_DISMISSED, String(Date.now()))
     }
 
     if (!visible) return null
@@ -78,7 +113,7 @@ export default function PushPrompt() {
                                 disabled={loading}
                                 className="px-4 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-medium transition-all disabled:opacity-50"
                             >
-                                {loading ? 'Mengaktifkan...' : 'Aktifkan'}
+                                {loading ? (status || 'Mengaktifkan...') : status || 'Aktifkan'}
                             </button>
                             <button
                                 onClick={handleDismiss}
