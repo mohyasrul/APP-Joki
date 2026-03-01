@@ -231,12 +231,15 @@ async function sendWebPush(
     body: encrypted,
   })
 
-  if (response.status >= 400) {
-    const body = await response.text()
-    console.error(`Push service ${response.status}: ${body}`)
+  const statusCode = response.status
+  const responseBody = await response.text()
+  console.log(`[PUSH] Push service response: ${statusCode} - ${responseBody}`)
+
+  if (statusCode >= 400) {
+    console.error(`[PUSH] Push service ERROR ${statusCode}: ${responseBody}`)
   }
 
-  return response
+  return new Response(responseBody, { status: statusCode, headers: response.headers })
 }
 
 // =============================================
@@ -246,10 +249,15 @@ async function sendWebPush(
 serve(async (req: Request) => {
   try {
     const body = await req.json()
+    console.log('[MAIN] Webhook payload keys:', Object.keys(body))
+    console.log('[MAIN] type:', body.type, '| table:', body.table)
+
     // Database webhook sends { type, table, record, ... }
     const record = body.record || body
+    console.log('[MAIN] Notification record:', JSON.stringify({ id: record.id, user_id: record.user_id, type: record.type, title: record.title }))
 
     if (!record || !record.user_id) {
+      console.warn('[MAIN] No user_id in record, aborting')
       return new Response(JSON.stringify({ error: 'No notification record' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -264,7 +272,10 @@ serve(async (req: Request) => {
       .select('*')
       .eq('user_id', record.user_id)
 
+    console.log('[MAIN] Subscriptions query for user', record.user_id, ':', error ? `ERROR: ${error.message}` : `Found ${subscriptions?.length || 0} subscriptions`)
+
     if (error || !subscriptions?.length) {
+      console.warn('[MAIN] No subscriptions — returning early')
       return new Response(
         JSON.stringify({ message: 'No subscriptions found', count: 0 }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -284,33 +295,40 @@ serve(async (req: Request) => {
 
     for (const sub of subscriptions) {
       try {
+        console.log(`[SEND] Sending to endpoint: ${sub.endpoint.substring(0, 80)}...`)
+        console.log(`[SEND] p256dh length: ${sub.p256dh?.length}, auth length: ${sub.auth?.length}`)
         const response = await sendWebPush(
           { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
           payload
         )
 
+        console.log(`[SEND] Push service returned: ${response.status}`)
+
         if (response.status === 201 || response.status === 200) {
           sent++
         } else if (response.status === 410 || response.status === 404) {
-          // Subscription expired — remove it
+          console.warn(`[SEND] Subscription expired (${response.status}), removing sub ${sub.id}`)
           await supabase.from('push_subscriptions').delete().eq('id', sub.id)
           failed++
         } else {
+          console.error(`[SEND] Unexpected status: ${response.status}`)
           failed++
         }
       } catch (err: unknown) {
-        console.error('Push send error:', err)
+        const errMsg = err instanceof Error ? err.message : String(err)
+        console.error(`[SEND] Push send EXCEPTION: ${errMsg}`)
         failed++
       }
     }
 
+    console.log(`[MAIN] Done. sent=${sent}, failed=${failed}, total=${subscriptions.length}`)
     return new Response(
       JSON.stringify({ sent, failed, total: subscriptions.length }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     )
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error'
-    console.error('Edge function error:', message)
+    const message = err instanceof Error ? `${err.message}\n${err.stack}` : 'Unknown error'
+    console.error('[MAIN] Edge function EXCEPTION:', message)
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
