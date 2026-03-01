@@ -54,7 +54,13 @@ export default function AdminOrders() {
         const channel = supabase
             .channel('orders-realtime')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, () => { toast.info('🔔 Order baru masuk!'); fetchOrders() })
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, () => { fetchOrders() })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
+                const updated = payload.new
+                if (updated.status_pembayaran === 'Menunggu Verifikasi') {
+                    toast.info('💳 Ada bukti pembayaran baru!')
+                }
+                fetchOrders()
+            })
             .subscribe()
         return () => { supabase.removeChannel(channel) }
     }, [])

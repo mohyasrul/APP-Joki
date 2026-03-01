@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import { useToast } from '../../components/Toast'
 import { ShoppingCart, CheckCircle, XCircle, Eye, Package, Clock, Inbox, Star } from 'lucide-react'
 
 const STATUS_COLORS = {
@@ -28,8 +29,44 @@ export default function PesananSaya() {
     const [filter, setFilter] = useState('Semua')
     const { user } = useAuth()
     const navigate = useNavigate()
+    const toast = useToast()
 
-    useEffect(() => { fetchOrders(); fetchRequests() }, [])
+    useEffect(() => {
+        fetchOrders(); fetchRequests()
+
+        // Realtime subscription for order updates
+        const channel = supabase
+            .channel('client-orders-realtime')
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'orders',
+                filter: `client_id=eq.${user.id}`,
+            }, (payload) => {
+                const oldData = payload.old
+                const newData = payload.new
+
+                // Only toast when status actually changed
+                if (oldData.status_pekerjaan && newData.status_pekerjaan && oldData.status_pekerjaan !== newData.status_pekerjaan) {
+                    toast.info(`\uD83D\uDCE6 Status pesanan berubah: ${newData.status_pekerjaan}`)
+                } else if (oldData.status_pembayaran && newData.status_pembayaran && oldData.status_pembayaran !== newData.status_pembayaran) {
+                    toast.info(`\uD83D\uDCB0 Pembayaran: ${newData.status_pembayaran}`)
+                }
+                fetchOrders()
+            })
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'custom_requests',
+                filter: `client_id=eq.${user.id}`,
+            }, () => {
+                toast.info('💬 Ada update untuk request kamu!')
+                fetchRequests()
+            })
+            .subscribe()
+
+        return () => { supabase.removeChannel(channel) }
+    }, [])
 
     const fetchOrders = async () => {
         const { data } = await supabase.from('orders').select('*, layanan(judul_tugas)').eq('client_id', user.id).order('created_at', { ascending: false })

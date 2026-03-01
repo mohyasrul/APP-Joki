@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { isPushSupported, subscribeToPush, unsubscribeFromPush } from '../lib/pushManager'
 
 const AuthContext = createContext({})
 
@@ -19,8 +20,13 @@ export function AuthProvider({ children }) {
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setUser(session?.user ?? null)
-            if (session?.user) fetchProfile(session.user.id)
-            else {
+            if (session?.user) {
+                fetchProfile(session.user.id)
+                // Re-subscribe push on session restore
+                if (isPushSupported()) {
+                    setTimeout(() => subscribeToPush(session.user.id), 2000)
+                }
+            } else {
                 setProfile(null)
                 setLoading(false)
             }
@@ -57,10 +63,20 @@ export function AuthProvider({ children }) {
     const signIn = async (email, password) => {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
+
+        // Subscribe to push notifications after login
+        if (data.user && isPushSupported()) {
+            // Delay slightly to not block login flow
+            setTimeout(() => subscribeToPush(data.user.id), 2000)
+        }
+
         return data
     }
 
     const signOut = async () => {
+        if (user && isPushSupported()) {
+            await unsubscribeFromPush(user.id).catch(() => {})
+        }
         await supabase.auth.signOut()
         setUser(null)
         setProfile(null)

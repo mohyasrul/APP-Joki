@@ -19,7 +19,31 @@ export default function AdminRequests() {
     const [processing, setProcessing] = useState(false)
     const toast = useToast()
 
-    useEffect(() => { fetchRequests() }, [])
+    useEffect(() => {
+        fetchRequests()
+
+        // Realtime subscription for new requests
+        const channel = supabase
+            .channel('admin-requests-realtime')
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'custom_requests',
+            }, () => {
+                toast.info('🔔 Request custom baru masuk!')
+                fetchRequests()
+            })
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'custom_requests',
+            }, () => {
+                fetchRequests()
+            })
+            .subscribe()
+
+        return () => { supabase.removeChannel(channel) }
+    }, [])
 
     const fetchRequests = async () => {
         const { data } = await supabase

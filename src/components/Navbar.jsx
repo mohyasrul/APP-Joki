@@ -5,6 +5,7 @@ import {
     BookOpen, ShoppingCart, LogOut, Menu, X, Sparkles, Settings, Tag, User, Inbox
 } from 'lucide-react'
 import { useState } from 'react'
+import NotificationBell from './NotificationBell'
 
 export default function Navbar() {
     const { profile, signOut, isAdmin } = useAuth()
@@ -65,6 +66,7 @@ export default function Navbar() {
 
                     {/* User Info */}
                     <div className="hidden md:flex items-center gap-3">
+                        <NotificationBell />
                         <NavLink to={isAdmin ? '/admin' : '/profil'} className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-purple-500/30 flex items-center justify-center overflow-hidden border border-white/10 hover:border-primary/50 transition-all">
                             {profile?.avatar_url ? (
                                 <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -98,6 +100,11 @@ export default function Navbar() {
             {/* Mobile menu */}
             {menuOpen && (
                 <div className="md:hidden glass border-t border-white/5 p-4 space-y-1 fade-in">
+                    <div className="flex items-center justify-between px-4 py-2">
+                        <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">Notifikasi</span>
+                        <NotificationBell />
+                    </div>
+                    <hr className="border-white/10 my-1" />
                     {links.map(link => (
                         <NavLink
                             key={link.to}

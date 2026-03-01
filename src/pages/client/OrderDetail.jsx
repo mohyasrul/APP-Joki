@@ -55,7 +55,34 @@ export default function OrderDetail() {
     // Payment instruction popup
     const [showPaymentGuide, setShowPaymentGuide] = useState(false)
 
-    useEffect(() => { fetchOrder(); fetchPaymentInfo() }, [id])
+    useEffect(() => {
+        fetchOrder(); fetchPaymentInfo()
+
+        // Realtime subscription for this specific order
+        const channel = supabase
+            .channel(`order-detail-${id}`)
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'orders',
+                filter: `id=eq.${id}`,
+            }, (payload) => {
+                const oldData = payload.old
+                const newData = payload.new
+                setOrder(prev => ({ ...prev, ...newData }))
+
+                // Only toast when the specific field actually changed
+                if (oldData.status_pekerjaan && newData.status_pekerjaan && oldData.status_pekerjaan !== newData.status_pekerjaan) {
+                    toast.info(`📦 Status berubah: ${newData.status_pekerjaan}`)
+                }
+                if (oldData.status_pembayaran && newData.status_pembayaran && oldData.status_pembayaran !== newData.status_pembayaran) {
+                    toast.info(`💰 Status pembayaran: ${newData.status_pembayaran}`)
+                }
+            })
+            .subscribe()
+
+        return () => { supabase.removeChannel(channel) }
+    }, [id])
 
     const fetchOrder = async () => {
         const { data } = await supabase.from('orders').select('*, layanan(*)').eq('id', id).single()
