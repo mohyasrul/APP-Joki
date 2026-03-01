@@ -1,0 +1,16 @@
+{
+    "name": "JokiHub",
+    "short_name": "JokiHub",
+    "description": "Platform manajemen joki tugas kuliah",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f0a2e",
+    "theme_color": "#6366f1",
+    "icons": [
+        {
+            "src": "/vite.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ]
+}

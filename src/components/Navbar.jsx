@@ -1,0 +1,125 @@
+import { NavLink, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import {
+    LayoutDashboard, ShoppingBag, ClipboardList, DollarSign,
+    BookOpen, ShoppingCart, LogOut, Menu, X, Sparkles, Settings, Tag, User, Inbox
+} from 'lucide-react'
+import { useState } from 'react'
+
+export default function Navbar() {
+    const { profile, signOut, isAdmin } = useAuth()
+    const navigate = useNavigate()
+    const [menuOpen, setMenuOpen] = useState(false)
+
+    const handleLogout = async () => {
+        await signOut()
+        navigate('/login')
+    }
+
+    const adminLinks = [
+        { to: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
+        { to: '/admin/layanan', icon: BookOpen, label: 'Katalog' },
+        { to: '/admin/orders', icon: ClipboardList, label: 'Orders' },
+        { to: '/admin/keuangan', icon: DollarSign, label: 'Keuangan' },
+        { to: '/admin/promo', icon: Tag, label: 'Promo' },
+        { to: '/admin/requests', icon: Inbox, label: 'Requests' },
+        { to: '/admin/settings', icon: Settings, label: 'Pengaturan' },
+    ]
+
+    const clientLinks = [
+        { to: '/katalog', icon: ShoppingBag, label: 'Katalog' },
+        { to: '/pesanan-saya', icon: ShoppingCart, label: 'Pesanan Saya' },
+        { to: '/request-custom', icon: Sparkles, label: 'Request Joki' },
+        { to: '/profil', icon: User, label: 'Profil' },
+    ]
+
+    const links = isAdmin ? adminLinks : clientLinks
+
+    const linkClass = ({ isActive }) =>
+        `flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isActive
+            ? 'bg-primary/20 text-primary-light shadow-lg shadow-primary/10'
+            : 'text-slate-400 hover:text-white hover:bg-white/5'
+        }`
+
+    return (
+        <nav className="glass border-b border-white/5 sticky top-0 z-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                <div className="flex items-center justify-between h-16">
+                    {/* Logo */}
+                    <div className="flex items-center gap-2">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center shadow-lg shadow-primary/20">
+                            <Sparkles className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="font-bold text-lg gradient-text hidden sm:block">JokiHub</span>
+                    </div>
+
+                    {/* Desktop Links */}
+                    <div className="hidden md:flex items-center gap-1">
+                        {links.map(link => (
+                            <NavLink key={link.to} to={link.to} end className={linkClass}>
+                                <link.icon className="w-4 h-4" />
+                                {link.label}
+                            </NavLink>
+                        ))}
+                    </div>
+
+                    {/* User Info */}
+                    <div className="hidden md:flex items-center gap-3">
+                        <NavLink to={isAdmin ? '/admin' : '/profil'} className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-purple-500/30 flex items-center justify-center overflow-hidden border border-white/10 hover:border-primary/50 transition-all">
+                            {profile?.avatar_url ? (
+                                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                                <User className="w-4 h-4 text-slate-400" />
+                            )}
+                        </NavLink>
+                        <div className="text-right">
+                            <p className="text-sm font-medium text-slate-200">{profile?.full_name}</p>
+                            <p className="text-xs text-slate-500 capitalize">{profile?.role}</p>
+                        </div>
+                        <button
+                            onClick={handleLogout}
+                            className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                            title="Logout"
+                        >
+                            <LogOut className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {/* Mobile menu toggle */}
+                    <button
+                        className="md:hidden p-2 text-slate-400 hover:text-white"
+                        onClick={() => setMenuOpen(!menuOpen)}
+                    >
+                        {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                    </button>
+                </div>
+            </div>
+
+            {/* Mobile menu */}
+            {menuOpen && (
+                <div className="md:hidden glass border-t border-white/5 p-4 space-y-1 fade-in">
+                    {links.map(link => (
+                        <NavLink
+                            key={link.to}
+                            to={link.to}
+                            end
+                            className={linkClass}
+                            onClick={() => setMenuOpen(false)}
+                        >
+                            <link.icon className="w-4 h-4" />
+                            {link.label}
+                        </NavLink>
+                    ))}
+                    <hr className="border-white/10 my-2" />
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 w-full transition-all"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                    </button>
+                </div>
+            )}
+        </nav>
+    )
+}
