@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Bell, CheckCheck, Package, DollarSign, Inbox, ShoppingBag, X } from 'lucide-react'
 import { useNotifications } from '../contexts/NotificationContext'
 import { useAuth } from '../contexts/AuthContext'
+import { timeAgo } from '../lib/constants'
 
 const TYPE_ICONS = {
   new_order: ShoppingBag,
@@ -16,17 +17,6 @@ const TYPE_COLORS = {
   order_status: 'text-purple-400 bg-purple-500/15',
   payment_update: 'text-green-400 bg-green-500/15',
   custom_request: 'text-yellow-400 bg-yellow-500/15',
-}
-
-function timeAgo(dateStr) {
-  const now = new Date()
-  const date = new Date(dateStr)
-  const diff = Math.floor((now - date) / 1000)
-  if (diff < 60) return 'Baru saja'
-  if (diff < 3600) return `${Math.floor(diff / 60)} menit lalu`
-  if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`
-  if (diff < 604800) return `${Math.floor(diff / 86400)} hari lalu`
-  return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
 }
 
 export default function NotificationBell() {
@@ -46,6 +36,14 @@ export default function NotificationBell() {
     }
     if (open) document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [open])
+
+  // Lock body scroll when dropdown is open (mobile)
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden'
+      return () => { document.body.style.overflow = '' }
+    }
   }, [open])
 
   const handleNotifClick = (notif) => {

@@ -69,63 +69,63 @@ STATUS LEGEND:
   P2 — MEDIUM (Penting untuk UX & kualitas)
 ================================================================================
 
-  [ ] #9  Validasi phone number absent
+  [x] #9  Validasi phone number absent
           Register menerima string apapun sebagai nomor HP.
           Solusi: regex validate ^(08|+62)[0-9]{8,13}$.
           File: Register.jsx
 
-  [ ] #10 Password show/hide toggle
+  [x] #10 Password show/hide toggle
           Login & Register tidak ada tombol mata untuk lihat password.
           File: Login.jsx, Register.jsx
 
-  [ ] #11 Toast overlap BottomNav
+  [x] #11 Toast overlap BottomNav
           Toast container di bottom-4 right-4 tertutup BottomNav di mobile.
           Solusi: bottom-20 saat ada BottomNav.
           File: Toast.jsx
 
-  [ ] #12 OG Image masih vite.svg
+  [x] #12 OG Image masih vite.svg
           Open Graph image generic, bukan branded.
           File: index.html
 
-  [ ] #13 maximum-scale=1 blokir user zoom
+  [x] #13 maximum-scale=1 blokir user zoom
           Accessibility violation — user yang perlu zoom tidak bisa.
           Solusi: hapus maximum-scale=1 dari viewport meta.
           File: index.html
 
-  [ ] #14 Promo tidak ada tanggal expired
+  [x] #14 Promo tidak ada tanggal expired
           Tabel promos tidak punya valid_until/expired_at. Promo aktif
           selamanya.
           Solusi: tambah kolom + check di claim_promo().
           File: upgrade-v2.sql (baru migration)
 
-  [ ] #15 Promo persen tanpa max cap
+  [x] #15 Promo persen tanpa max cap
           Promo 100% bisa bikin harga Rp 0 tanpa batas.
           Solusi: tambah kolom max_potongan.
           File: upgrade-v2.sql (baru migration)
 
-  [ ] #16 Duplikasi kode: formatSize, getFileIcon, STATUS_COLORS
+  [x] #16 Duplikasi kode: formatSize, getFileIcon, STATUS_COLORS
           Fungsi dan constants yang sama di 2-3 file berbeda.
           Solusi: pindahkan ke src/lib/utils.js dan src/lib/constants.js.
           File: OrderDetail.jsx, AdminOrders.jsx, PesananSaya.jsx, Dashboard.jsx
 
-  [ ] #17 Tidak ada fitur change password
+  [x] #17 Tidak ada fitur change password
           Halaman Profile hanya edit nama, HP, avatar.
           File: Profile.jsx
 
-  [ ] #18 NotificationBell dropdown tidak lock scroll
+  [x] #18 NotificationBell dropdown tidak lock scroll
           Di mobile, user bisa scroll page di belakang dropdown notifikasi.
           File: NotificationBell.jsx
 
-  [ ] #19 Google Fonts blocking render
+  [x] #19 Google Fonts blocking render
           Font Inter loaded via blocking <link>.
           Solusi: tambah font-display: swap atau <link rel="preload">.
           File: index.html
 
-  [ ] #20 Tidak ada .env.example
+  [x] #20 Tidak ada .env.example
           Developer baru tidak tahu env var apa saja yang perlu diset.
           File: (baru) .env.example
 
-  [ ] #21 Tidak ada offline fallback page
+  [-] #21 Tidak ada offline fallback page
           PWA offline menampilkan error browser generic.
           File: sw.js, (baru) offline.html
 

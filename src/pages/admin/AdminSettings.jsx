@@ -28,7 +28,7 @@ export default function AdminSettings() {
     const [promoLoading, setPromoLoading] = useState(true)
     const [showPromoModal, setShowPromoModal] = useState(false)
     const [editingPromo, setEditingPromo] = useState(null)
-    const [promoForm, setPromoForm] = useState({ kode: '', deskripsi: '', tipe: 'persen', nilai: '', kuota: '', aktif: true })
+    const [promoForm, setPromoForm] = useState({ kode: '', deskripsi: '', tipe: 'persen', nilai: '', kuota: '', aktif: true, expired_at: '', max_potongan: '' })
     const [savingPromo, setSavingPromo] = useState(false)
     const [deletePromoTarget, setDeletePromoTarget] = useState(null)
     const [promoPage, setPromoPage] = useState(1)
@@ -91,10 +91,10 @@ export default function AdminSettings() {
     const openPromoModal = (item = null) => {
         if (item) {
             setEditingPromo(item)
-            setPromoForm({ kode: item.kode, deskripsi: item.deskripsi || '', tipe: item.tipe, nilai: item.nilai, kuota: item.kuota || '', aktif: item.aktif })
+            setPromoForm({ kode: item.kode, deskripsi: item.deskripsi || '', tipe: item.tipe, nilai: item.nilai, kuota: item.kuota || '', aktif: item.aktif, expired_at: item.expired_at ? item.expired_at.slice(0, 16) : '', max_potongan: item.max_potongan || '' })
         } else {
             setEditingPromo(null)
-            setPromoForm({ kode: '', deskripsi: '', tipe: 'persen', nilai: '', kuota: '', aktif: true })
+            setPromoForm({ kode: '', deskripsi: '', tipe: 'persen', nilai: '', kuota: '', aktif: true, expired_at: '', max_potongan: '' })
         }
         setShowPromoModal(true)
     }
@@ -109,6 +109,8 @@ export default function AdminSettings() {
             nilai: parseInt(promoForm.nilai),
             kuota: promoForm.kuota ? parseInt(promoForm.kuota) : null,
             aktif: promoForm.aktif,
+            expired_at: promoForm.expired_at || null,
+            max_potongan: promoForm.max_potongan ? parseInt(promoForm.max_potongan) : null,
         }
         try {
             if (editingPromo) {
@@ -320,6 +322,17 @@ export default function AdminSettings() {
                         <input type="number" value={promoForm.kuota} onChange={(e) => setPromoForm({ ...promoForm, kuota: e.target.value })} className={inputClass}
                             placeholder="100" min="0" />
                     </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Berlaku Sampai (opsional)</label>
+                        <input type="datetime-local" value={promoForm.expired_at} onChange={(e) => setPromoForm({ ...promoForm, expired_at: e.target.value })} className={inputClass + ' cursor-pointer'} />
+                    </div>
+                    {promoForm.tipe === 'persen' && (
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Max Potongan / Rp (opsional)</label>
+                            <input type="number" value={promoForm.max_potongan} onChange={(e) => setPromoForm({ ...promoForm, max_potongan: e.target.value })} className={inputClass}
+                                placeholder="50000" min="0" />
+                        </div>
+                    )}
                     <button type="submit" disabled={savingPromo}
                         className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-primary/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
                         {savingPromo ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> {editingPromo ? 'Simpan' : 'Buat Promo'}</>}

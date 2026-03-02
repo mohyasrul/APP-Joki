@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { useToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import { formatRupiah } from '../../lib/utils'
+import { STATUS_COLORS, BAYAR_COLORS, getFileIcon, formatSize } from '../../lib/constants'
 import {
     ClipboardList, Search, CheckCircle, XCircle, X, Image as ImageIcon,
     Loader2, AlertTriangle, Upload, Star, FileText, Download, ExternalLink, Eye
@@ -10,30 +11,6 @@ import {
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 const STATUS_PEKERJAAN = ['Menunggu Diproses', 'Sedang Dikerjakan', 'Selesai', 'Batal']
-const STATUS_COLORS = {
-    'Menunggu Diproses': 'text-yellow-400 bg-yellow-500/10',
-    'Sedang Dikerjakan': 'text-blue-400 bg-blue-500/10',
-    'Selesai': 'text-green-400 bg-green-500/10',
-    'Batal': 'text-red-400 bg-red-500/10',
-}
-const BAYAR_COLORS = {
-    'Belum Bayar': 'text-red-400 bg-red-500/10',
-    'Menunggu Verifikasi': 'text-yellow-400 bg-yellow-500/10',
-    'Lunas': 'text-green-400 bg-green-500/10',
-}
-
-const FILE_ICONS = {
-    image: '🖼️', pdf: '📄', doc: '📝', zip: '📦', default: '📎'
-}
-const getFileIcon = (name) => {
-    if (!name) return FILE_ICONS.default
-    const ext = name.split('.').pop().toLowerCase()
-    if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) return FILE_ICONS.image
-    if (ext === 'pdf') return FILE_ICONS.pdf
-    if (['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt'].includes(ext)) return FILE_ICONS.doc
-    if (['zip', 'rar', '7z'].includes(ext)) return FILE_ICONS.zip
-    return FILE_ICONS.default
-}
 
 export default function AdminOrders() {
     const [orders, setOrders] = useState([])
@@ -203,12 +180,6 @@ export default function AdminOrders() {
     const isOverdue = (d) => d && new Date(d) < new Date()
 
     const filters = ['Semua', 'Menunggu Verifikasi', 'Menunggu Diproses', 'Sedang Dikerjakan', 'Selesai']
-
-    const formatSize = (bytes) => {
-        if (bytes < 1024) return bytes + ' B'
-        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'
-        return (bytes / 1048576).toFixed(1) + ' MB'
-    }
 
     return (
         <div className="fade-in">

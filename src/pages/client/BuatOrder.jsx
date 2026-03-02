@@ -52,6 +52,8 @@ export default function BuatOrder() {
             setPromoError('Kode promo tidak valid atau sudah kadaluarsa')
         } else if (data.kuota !== null && data.terpakai >= data.kuota) {
             setPromoError('Kuota promo sudah habis')
+        } else if (data.expired_at && new Date(data.expired_at) < new Date()) {
+            setPromoError('Kode promo sudah kadaluarsa')
         } else {
             setPromoData(data)
             toast.success(`Promo "${data.kode}" berhasil diterapkan!`)
@@ -67,7 +69,11 @@ export default function BuatOrder() {
 
     const calculateDiscount = () => {
         if (!promoData) return 0
-        if (promoData.tipe === 'persen') return Math.round(layanan.harga_estimasi * promoData.nilai / 100)
+        if (promoData.tipe === 'persen') {
+            let disc = Math.round(layanan.harga_estimasi * promoData.nilai / 100)
+            if (promoData.max_potongan) disc = Math.min(disc, promoData.max_potongan)
+            return disc
+        }
         return promoData.nilai
     }
 
@@ -102,6 +108,7 @@ export default function BuatOrder() {
                         kuota: row.out_kuota,
                         terpakai: row.out_terpakai,
                         aktif: row.out_aktif,
+                        max_potongan: row.out_max_potongan || null,
                     }
                 }
             }

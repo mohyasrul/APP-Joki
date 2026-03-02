@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { UserPlus, Mail, Lock, User, Phone, Sparkles, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react'
+import { UserPlus, Mail, Lock, User, Phone, Sparkles, AlertCircle, CheckCircle, ArrowRight, Eye, EyeOff } from 'lucide-react'
 
 export default function Register() {
     const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '', confirmPassword: '' })
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const [emailSent, setEmailSent] = useState(false)
+    const [showPassword, setShowPassword] = useState(false)
+    const [showConfirm, setShowConfirm] = useState(false)
     const { signUp } = useAuth()
     const navigate = useNavigate()
 
@@ -22,6 +24,10 @@ export default function Register() {
         }
         if (form.password.length < 6) {
             setError('Password minimal 6 karakter')
+            return
+        }
+        if (form.phone && !/^(08|\+62)[0-9]{8,13}$/.test(form.phone)) {
+            setError('Format nomor HP tidak valid (contoh: 081234567890)')
             return
         }
         setLoading(true)
@@ -116,8 +122,12 @@ export default function Register() {
                             <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                                <input type="password" name="password" value={form.password} onChange={handleChange}
-                                    className={inputClass} placeholder="Min. 6 karakter" required />
+                                <input type={showPassword ? 'text' : 'password'} name="password" value={form.password} onChange={handleChange}
+                                    className={inputClass + ' pr-11'} placeholder="Min. 6 karakter" required />
+                                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
+                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                </button>
                             </div>
                         </div>
 
@@ -125,8 +135,12 @@ export default function Register() {
                             <label className="block text-sm font-medium text-slate-300 mb-1.5">Konfirmasi Password</label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                                <input type="password" name="confirmPassword" value={form.confirmPassword} onChange={handleChange}
-                                    className={inputClass} placeholder="Ulangi password" required />
+                                <input type={showConfirm ? 'text' : 'password'} name="confirmPassword" value={form.confirmPassword} onChange={handleChange}
+                                    className={inputClass + ' pr-11'} placeholder="Ulangi password" required />
+                                <button type="button" onClick={() => setShowConfirm(!showConfirm)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
+                                    {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                </button>
                             </div>
                         </div>
 

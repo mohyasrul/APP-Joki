@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { LogIn, Mail, Lock, Sparkles, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { LogIn, Mail, Lock, Sparkles, AlertCircle, ArrowLeft, CheckCircle2, Eye, EyeOff } from 'lucide-react'
 import Modal from '../../components/Modal'
 
 export default function Login() {
@@ -15,6 +15,7 @@ export default function Login() {
     const [forgotLoading, setForgotLoading] = useState(false)
     const [forgotSent, setForgotSent] = useState(false)
     const [forgotError, setForgotError] = useState('')
+    const [showPassword, setShowPassword] = useState(false)
     const { signIn } = useAuth()
     const navigate = useNavigate()
 
@@ -93,13 +94,17 @@ export default function Login() {
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                                 <input
-                                    type="password"
+                                    type={showPassword ? 'text' : 'password'}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
+                                    className="w-full pl-11 pr-11 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
                                     placeholder="••••••••"
                                     required
                                 />
+                                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
+                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                </button>
                             </div>
                         </div>
 

@@ -4,20 +4,10 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
 import { formatRupiah } from '../../lib/utils'
+import { STATUS_COLORS, BAYAR_COLORS } from '../../lib/constants'
 import { ShoppingCart, CheckCircle, XCircle, Eye, Package, Clock, Inbox, Star, AlertCircle, RefreshCw } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
-const STATUS_COLORS = {
-    'Menunggu Diproses': 'text-yellow-400 bg-yellow-500/10',
-    'Sedang Dikerjakan': 'text-blue-400 bg-blue-500/10',
-    'Selesai': 'text-green-400 bg-green-500/10',
-    'Batal': 'text-red-400 bg-red-500/10',
-}
-const BAYAR_COLORS = {
-    'Belum Bayar': 'text-red-400 bg-red-500/10',
-    'Menunggu Verifikasi': 'text-yellow-400 bg-yellow-500/10',
-    'Lunas': 'text-green-400 bg-green-500/10',
-}
 const REQ_STATUS = {
     pending: { label: 'Menunggu', color: 'text-yellow-400 bg-yellow-500/10', icon: Clock },
     accepted: { label: 'Diterima', color: 'text-green-400 bg-green-500/10', icon: CheckCircle },

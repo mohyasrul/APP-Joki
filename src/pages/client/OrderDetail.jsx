@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import { formatRupiah } from '../../lib/utils'
+import { getFileIcon, formatSize } from '../../lib/constants'
 import {
     ArrowLeft, Upload, CheckCircle, Clock, FileCheck, AlertCircle,
     ImageIcon, XCircle, Loader2, Ban, Download, Star, RotateCcw, Tag, FileText, HelpCircle, X
@@ -21,16 +22,6 @@ const BAYAR_MAP = {
     'Menunggu Verifikasi': { color: 'text-yellow-400 bg-yellow-500/10' },
     'Lunas': { color: 'text-green-400 bg-green-500/10' },
 }
-const getFileIcon = (name) => {
-    if (!name) return '📎'
-    const ext = name.split('.').pop().toLowerCase()
-    if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) return '🖼️'
-    if (ext === 'pdf') return '📄'
-    if (['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt'].includes(ext)) return '📝'
-    if (['zip', 'rar', '7z'].includes(ext)) return '📦'
-    return '📎'
-}
-const formatSize = (b) => b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(1) + ' MB'
 
 export default function OrderDetail() {
     const { id } = useParams()
