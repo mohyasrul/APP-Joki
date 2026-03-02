@@ -48,7 +48,7 @@ async function createVapidJwt(audience: string): Promise<string> {
   const claims = {
     aud: audience,
     exp: now + 12 * 60 * 60,
-    sub: 'mailto:admin@jokihub.com',
+    sub: 'mailto:admin@jokskuy.com',
   }
 
   const enc = new TextEncoder()

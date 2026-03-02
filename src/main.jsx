@@ -13,7 +13,7 @@ const updateSW = registerSW({
     updateSW(true)
   },
   onOfflineReady() {
-    console.log('JokiHub siap digunakan offline')
+    console.log('Jokskuy siap digunakan offline')
   },
 })
 

@@ -14,8 +14,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: false,
       manifest: {
-        name: 'JokiHub',
-        short_name: 'JokiHub',
+        name: 'Jokskuy',
+        short_name: 'Jokskuy',
         description: 'Platform manajemen joki tugas kuliah',
         start_url: '/',
         display: 'standalone',

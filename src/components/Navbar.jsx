@@ -1,16 +1,19 @@
+import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
     LayoutDashboard, ShoppingBag, ClipboardList, DollarSign,
-    BookOpen, ShoppingCart, LogOut, Sparkles, Settings, Tag, User, Inbox
+    BookOpen, ShoppingCart, LogOut, Sparkles, Settings, User, Inbox
 } from 'lucide-react'
 import NotificationBell from './NotificationBell'
 
 export default function Navbar() {
     const { profile, signOut, isAdmin } = useAuth()
     const navigate = useNavigate()
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
     const handleLogout = async () => {
+        setShowLogoutConfirm(false)
         await signOut()
         navigate('/login')
     }
@@ -20,7 +23,6 @@ export default function Navbar() {
         { to: '/admin/layanan', icon: BookOpen, label: 'Katalog' },
         { to: '/admin/orders', icon: ClipboardList, label: 'Orders' },
         { to: '/admin/keuangan', icon: DollarSign, label: 'Keuangan' },
-        { to: '/admin/promo', icon: Tag, label: 'Promo' },
         { to: '/admin/requests', icon: Inbox, label: 'Requests' },
         { to: '/admin/settings', icon: Settings, label: 'Pengaturan' },
     ]
@@ -49,7 +51,7 @@ export default function Navbar() {
                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center shadow-lg shadow-primary/20">
                             <Sparkles className="w-5 h-5 text-white" />
                         </div>
-                        <span className="font-bold text-lg gradient-text">JokiHub</span>
+                        <span className="font-bold text-lg gradient-text">Jokskuy</span>
                     </div>
 
                     {/* Desktop Links */}
@@ -77,7 +79,7 @@ export default function Navbar() {
                             <p className="text-xs text-slate-500 capitalize">{profile?.role}</p>
                         </div>
                         <button
-                            onClick={handleLogout}
+                            onClick={() => setShowLogoutConfirm(true)}
                             className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
                             title="Logout"
                         >
@@ -96,7 +98,7 @@ export default function Navbar() {
                             )}
                         </NavLink>
                         <button
-                            onClick={handleLogout}
+                            onClick={() => setShowLogoutConfirm(true)}
                             className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
                             title="Logout"
                         >
@@ -105,6 +107,21 @@ export default function Navbar() {
                     </div>
                 </div>
             </div>
+
+            {/* Logout Confirmation Modal */}
+            {showLogoutConfirm && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="w-full max-w-sm glass rounded-2xl p-6 slide-up text-center">
+                        <LogOut className="w-12 h-12 text-red-400 mx-auto mb-3" />
+                        <h3 className="text-lg font-bold text-white mb-2">Keluar dari Akun?</h3>
+                        <p className="text-sm text-slate-400 mb-6">Kamu yakin ingin logout dari Jokskuy?</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">Batal</button>
+                            <button onClick={handleLogout} className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-medium hover:bg-red-500/30 transition-all">Keluar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </nav>
     )
 }

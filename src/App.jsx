@@ -21,7 +21,6 @@ const KelolaLayanan = lazy(() => import('./pages/admin/KelolaLayanan'))
 const AdminOrders = lazy(() => import('./pages/admin/AdminOrders'))
 const Keuangan = lazy(() => import('./pages/admin/Keuangan'))
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'))
-const AdminPromo = lazy(() => import('./pages/admin/AdminPromo'))
 const AdminRequests = lazy(() => import('./pages/admin/AdminRequests'))
 
 function PageLoader() {
@@ -71,7 +70,6 @@ function AppRoutes() {
           <Route path="/admin/orders" element={<AdminOrders />} />
           <Route path="/admin/keuangan" element={<Keuangan />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
-          <Route path="/admin/promo" element={<AdminPromo />} />
           <Route path="/admin/requests" element={<AdminRequests />} />
         </Route>
 

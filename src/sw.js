@@ -7,7 +7,7 @@ precacheAndRoute(self.__WB_MANIFEST)
 // Push Notification Handler
 // ==========================================
 self.addEventListener('push', (event) => {
-  let data = { title: 'JokiHub', body: 'Ada notifikasi baru!', url: '/' }
+  let data = { title: 'Jokskuy', body: 'Ada notifikasi baru!', url: '/' }
 
   try {
     if (event.data) {
@@ -32,7 +32,7 @@ self.addEventListener('push', (event) => {
       { action: 'open', title: 'Buka' },
       { action: 'close', title: 'Tutup' },
     ],
-    tag: data.tag || 'jokihub-notification',
+    tag: data.tag || 'jokskuy-notification',
     renotify: true,
   }
 

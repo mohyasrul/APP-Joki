@@ -11,6 +11,11 @@ export default function Pagination({ currentPage, totalItems, onPageChange, item
 
   if (totalPages <= 1) return null
 
+  const handlePageChange = (page) => {
+    onPageChange(page)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   // Build page numbers to display (max 5 visible)
   const pages = []
   const maxVisible = 5
@@ -26,7 +31,7 @@ export default function Pagination({ currentPage, totalItems, onPageChange, item
     <div className="flex items-center justify-center gap-1.5 mt-6">
       {/* Prev */}
       <button
-        onClick={() => onPageChange(currentPage - 1)}
+        onClick={() => handlePageChange(currentPage - 1)}
         disabled={currentPage === 1}
         className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
         aria-label="Halaman sebelumnya"
@@ -38,7 +43,7 @@ export default function Pagination({ currentPage, totalItems, onPageChange, item
       {start > 1 && (
         <>
           <button
-            onClick={() => onPageChange(1)}
+            onClick={() => handlePageChange(1)}
             className="w-9 h-9 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/10 transition-all"
           >
             1
@@ -51,7 +56,7 @@ export default function Pagination({ currentPage, totalItems, onPageChange, item
       {pages.map((page) => (
         <button
           key={page}
-          onClick={() => onPageChange(page)}
+          onClick={() => handlePageChange(page)}
           className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${
             page === currentPage
               ? 'bg-primary/20 text-primary-light border border-primary/30'
@@ -67,7 +72,7 @@ export default function Pagination({ currentPage, totalItems, onPageChange, item
         <>
           {end < totalPages - 1 && <span className="text-slate-600 text-sm px-1">…</span>}
           <button
-            onClick={() => onPageChange(totalPages)}
+            onClick={() => handlePageChange(totalPages)}
             className="w-9 h-9 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/10 transition-all"
           >
             {totalPages}
@@ -77,7 +82,7 @@ export default function Pagination({ currentPage, totalItems, onPageChange, item
 
       {/* Next */}
       <button
-        onClick={() => onPageChange(currentPage + 1)}
+        onClick={() => handlePageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
         className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
         aria-label="Halaman berikutnya"

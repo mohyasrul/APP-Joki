@@ -35,7 +35,7 @@ export default function Login() {
                     <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center mx-auto mb-4 shadow-xl shadow-primary/20">
                         <Sparkles className="w-8 h-8 text-white" />
                     </div>
-                    <h1 className="text-3xl font-bold gradient-text">JokiHub</h1>
+                    <h1 className="text-3xl font-bold gradient-text">Jokskuy</h1>
                     <p className="text-slate-400 mt-2">Masuk ke akun kamu</p>
                 </div>
 
