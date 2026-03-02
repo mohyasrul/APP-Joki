@@ -2,7 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
   LayoutDashboard, ShoppingBag, ClipboardList, DollarSign,
-  ShoppingCart, Sparkles, User, Inbox, Settings
+  ShoppingCart, Sparkles, User, Inbox, BookOpen
 } from 'lucide-react'
 
 const clientTabs = [
@@ -14,10 +14,10 @@ const clientTabs = [
 
 const adminTabs = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/admin/layanan', icon: BookOpen, label: 'Katalog' },
   { to: '/admin/orders', icon: ClipboardList, label: 'Orders' },
   { to: '/admin/keuangan', icon: DollarSign, label: 'Keuangan' },
   { to: '/admin/requests', icon: Inbox, label: 'Requests' },
-  { to: '/admin/settings', icon: Settings, label: 'Settings' },
 ]
 
 export default function BottomNav() {
