@@ -11,16 +11,18 @@ STATUS LEGEND:
   P0 — CRITICAL (Harus segera diperbaiki)
 ================================================================================
 
-  [ ] #1  get_dashboard_stats() bocor ke client
+  [x] #1  get_dashboard_stats() bocor ke client
           Semua user (termasuk client) bisa panggil RPC ini dan lihat total
           income + semua recent orders. 
           Solusi: tambah admin role check di function body.
           File: upgrade-functions.sql
+          DONE: commit 8931b9a — admin role check added
 
-  [ ] #2  Tidak ada Error Boundary
+  [x] #2  Tidak ada Error Boundary
           Error React yang tidak ter-handle menyebabkan white screen.
           Solusi: buat ErrorBoundary component + fallback UI + tombol retry.
           File: App.jsx (baru: ErrorBoundary.jsx)
+          DONE: commit 8931b9a — ErrorBoundary wraps entire app
 
 ================================================================================
   P1 — HIGH (Sangat penting)

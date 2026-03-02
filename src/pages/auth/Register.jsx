@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { UserPlus, Mail, Lock, User, Phone, Sparkles, AlertCircle } from 'lucide-react'
+import { UserPlus, Mail, Lock, User, Phone, Sparkles, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react'
 
 export default function Register() {
     const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '', confirmPassword: '' })
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
+    const [emailSent, setEmailSent] = useState(false)
     const { signUp } = useAuth()
     const navigate = useNavigate()
 
@@ -26,7 +27,7 @@ export default function Register() {
         setLoading(true)
         try {
             await signUp(form.email, form.password, form.fullName, form.phone)
-            navigate('/katalog')
+            setEmailSent(true)
         } catch (err) {
             setError(err.message)
         } finally {
@@ -35,6 +36,34 @@ export default function Register() {
     }
 
     const inputClass = "w-full pl-11 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
+
+    if (emailSent) {
+        return (
+            <div className="min-h-screen flex items-center justify-center px-4 py-8">
+                <div className="w-full max-w-md slide-up text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-green-500/20">
+                        <CheckCircle className="w-8 h-8 text-white" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-white mb-3">Cek Email Kamu!</h1>
+                    <p className="text-slate-400 mb-2">Kami sudah mengirim link verifikasi ke:</p>
+                    <p className="text-primary-light font-medium mb-6">{form.email}</p>
+                    <div className="glass rounded-2xl p-6 mb-6 text-left">
+                        <p className="text-sm text-slate-300 mb-3">Langkah selanjutnya:</p>
+                        <ol className="text-sm text-slate-400 space-y-2 list-decimal list-inside">
+                            <li>Buka inbox email kamu</li>
+                            <li>Klik link verifikasi dari Jokskuy</li>
+                            <li>Setelah terverifikasi, login dengan akun baru</li>
+                        </ol>
+                        <p className="text-xs text-slate-500 mt-3">Tidak menemukan email? Cek folder spam.</p>
+                    </div>
+                    <Link to="/login" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-primary/25 transition-all group">
+                        Ke Halaman Login
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center px-4 py-8">

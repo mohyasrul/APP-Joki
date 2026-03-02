@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useToast } from '../../components/Toast'
-import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import Modal from '../../components/Modal'
 import { formatRupiah } from '../../lib/utils'
 import {
-    Settings, Save, Loader2, CreditCard, Tag, Plus, X, Trash2, GripVertical,
+    Settings, Save, Loader2, CreditCard, Tag, Plus, Trash2, GripVertical,
     ChevronRight, ArrowLeft, Edit3, ToggleLeft, ToggleRight, Percent
 } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
@@ -32,8 +32,6 @@ export default function AdminSettings() {
     const [savingPromo, setSavingPromo] = useState(false)
     const [deletePromoTarget, setDeletePromoTarget] = useState(null)
     const [promoPage, setPromoPage] = useState(1)
-
-    useBodyScrollLock(showPromoModal || !!deletePromoTarget)
 
     useEffect(() => { fetchSettings(); fetchKategori() }, [])
 
@@ -291,66 +289,55 @@ export default function AdminSettings() {
             )}
 
             {/* Promo Modal */}
-            {showPromoModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-lg glass rounded-2xl p-6 slide-up glow">
-                        <div className="flex items-center justify-between mb-5">
-                            <h2 className="text-lg font-bold text-white">{editingPromo ? 'Edit Promo' : 'Buat Promo Baru'}</h2>
-                            <button onClick={() => setShowPromoModal(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"><X className="w-5 h-5" /></button>
-                        </div>
-                        <form onSubmit={handleSavePromo} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Kode Promo</label>
-                                <input type="text" value={promoForm.kode} onChange={(e) => setPromoForm({ ...promoForm, kode: e.target.value.toUpperCase() })} className={inputClass + ' uppercase font-mono'}
-                                    placeholder="DISKON20" required />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Deskripsi</label>
-                                <input type="text" value={promoForm.deskripsi} onChange={(e) => setPromoForm({ ...promoForm, deskripsi: e.target.value })} className={inputClass}
-                                    placeholder="Diskon 20% untuk semua layanan" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Tipe Diskon</label>
-                                    <select value={promoForm.tipe} onChange={(e) => setPromoForm({ ...promoForm, tipe: e.target.value })} className={inputClass + ' cursor-pointer'}>
-                                        <option value="persen" className="bg-slate-800">Persen (%)</option>
-                                        <option value="nominal" className="bg-slate-800">Nominal (Rp)</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Nilai</label>
-                                    <input type="number" value={promoForm.nilai} onChange={(e) => setPromoForm({ ...promoForm, nilai: e.target.value })} className={inputClass}
-                                        placeholder={promoForm.tipe === 'persen' ? '20' : '10000'} required min="0" />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Kuota (kosongkan = unlimited)</label>
-                                <input type="number" value={promoForm.kuota} onChange={(e) => setPromoForm({ ...promoForm, kuota: e.target.value })} className={inputClass}
-                                    placeholder="100" min="0" />
-                            </div>
-                            <button type="submit" disabled={savingPromo}
-                                className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-primary/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                                {savingPromo ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> {editingPromo ? 'Simpan' : 'Buat Promo'}</>}
-                            </button>
-                        </form>
+            <Modal open={showPromoModal} onClose={() => setShowPromoModal(false)} title={editingPromo ? 'Edit Promo' : 'Buat Promo Baru'}>
+                <form onSubmit={handleSavePromo} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Kode Promo</label>
+                        <input type="text" value={promoForm.kode} onChange={(e) => setPromoForm({ ...promoForm, kode: e.target.value.toUpperCase() })} className={inputClass + ' uppercase font-mono'}
+                            placeholder="DISKON20" required />
                     </div>
-                </div>
-            )}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Deskripsi</label>
+                        <input type="text" value={promoForm.deskripsi} onChange={(e) => setPromoForm({ ...promoForm, deskripsi: e.target.value })} className={inputClass}
+                            placeholder="Diskon 20% untuk semua layanan" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Tipe Diskon</label>
+                            <select value={promoForm.tipe} onChange={(e) => setPromoForm({ ...promoForm, tipe: e.target.value })} className={inputClass + ' cursor-pointer'}>
+                                <option value="persen" className="bg-slate-800">Persen (%)</option>
+                                <option value="nominal" className="bg-slate-800">Nominal (Rp)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Nilai</label>
+                            <input type="number" value={promoForm.nilai} onChange={(e) => setPromoForm({ ...promoForm, nilai: e.target.value })} className={inputClass}
+                                placeholder={promoForm.tipe === 'persen' ? '20' : '10000'} required min="0" />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Kuota (kosongkan = unlimited)</label>
+                        <input type="number" value={promoForm.kuota} onChange={(e) => setPromoForm({ ...promoForm, kuota: e.target.value })} className={inputClass}
+                            placeholder="100" min="0" />
+                    </div>
+                    <button type="submit" disabled={savingPromo}
+                        className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-primary/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                        {savingPromo ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> {editingPromo ? 'Simpan' : 'Buat Promo'}</>}
+                    </button>
+                </form>
+            </Modal>
 
             {/* Delete Promo Modal */}
-            {deletePromoTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-sm glass rounded-2xl p-6 slide-up text-center">
-                        <Trash2 className="w-12 h-12 text-red-400 mx-auto mb-3" />
-                        <h3 className="text-lg font-bold text-white mb-2">Hapus Promo?</h3>
-                        <p className="text-sm text-slate-400 mb-6">Kode: <span className="font-mono text-primary-light">{deletePromoTarget.kode}</span></p>
-                        <div className="flex gap-3">
-                            <button onClick={() => setDeletePromoTarget(null)} className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">Batal</button>
-                            <button onClick={handleDeletePromo} className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-medium hover:bg-red-500/30 transition-all">Hapus</button>
-                        </div>
+            <Modal open={!!deletePromoTarget} onClose={() => setDeletePromoTarget(null)} title="Hapus Promo?" maxWidth="max-w-sm">
+                <div className="text-center">
+                    <Trash2 className="w-12 h-12 text-red-400 mx-auto mb-3" />
+                    <p className="text-sm text-slate-400 mb-6">Kode: <span className="font-mono text-primary-light">{deletePromoTarget?.kode}</span></p>
+                    <div className="flex gap-3">
+                        <button onClick={() => setDeletePromoTarget(null)} className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">Batal</button>
+                        <button onClick={handleDeletePromo} className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-medium hover:bg-red-500/30 transition-all">Hapus</button>
                     </div>
                 </div>
-            )}
+            </Modal>
         </>
     )
 

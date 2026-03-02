@@ -42,12 +42,13 @@ export function ToastProvider({ children }) {
         <ToastContext.Provider value={toast}>
             {children}
             {/* Toast Container */}
-            <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+            <div className="fixed bottom-20 sm:bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-sm w-full pointer-events-none" role="status" aria-live="polite">
                 {toasts.map(t => {
                     const Icon = ICONS[t.type]
                     return (
                         <div
                             key={t.id}
+                            role="alert"
                             className={`glass border rounded-xl p-4 flex items-start gap-3 shadow-xl slide-up pointer-events-auto ${COLORS[t.type]}`}
                         >
                             <Icon className="w-5 h-5 shrink-0 mt-0.5" />

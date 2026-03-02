@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useToast } from '../../components/Toast'
-import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import Modal from '../../components/Modal'
 import { formatRupiah } from '../../lib/utils'
-import { BookOpen, Plus, Edit3, ToggleLeft, ToggleRight, Save, X, Loader2, Trash2 } from 'lucide-react'
+import { BookOpen, Plus, Edit3, ToggleLeft, ToggleRight, Save, Loader2, Trash2 } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 export default function KelolaLayanan() {
@@ -17,8 +17,6 @@ export default function KelolaLayanan() {
     const [kategoriOptions, setKategoriOptions] = useState([])
     const [currentPage, setCurrentPage] = useState(1)
     const toast = useToast()
-
-    useBodyScrollLock(showModal || !!deleteTarget)
 
     useEffect(() => { fetchLayanan(); fetchKategori() }, [])
 
@@ -131,54 +129,43 @@ export default function KelolaLayanan() {
                 <Pagination currentPage={currentPage} totalItems={layanan.length} onPageChange={setCurrentPage} />
             )}
 
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-lg glass rounded-2xl p-6 slide-up glow">
-                        <div className="flex items-center justify-between mb-5">
-                            <h2 className="text-lg font-bold text-white">{editing ? 'Edit Layanan' : 'Tambah Layanan Baru'}</h2>
-                            <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"><X className="w-5 h-5" /></button>
-                        </div>
-                        <form onSubmit={handleSave} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Judul Tugas</label>
-                                <input type="text" value={form.judul_tugas} onChange={(e) => setForm({ ...form, judul_tugas: e.target.value })} className={inputClass} placeholder="Contoh: Makalah Sejarah" required />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Kategori</label>
-                                <select value={form.kategori} onChange={(e) => setForm({ ...form, kategori: e.target.value })} className={inputClass + ' cursor-pointer'}>
-                                    {kategoriOptions.map(k => <option key={k} value={k} className="bg-slate-800">{k}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Deskripsi</label>
-                                <textarea value={form.deskripsi} onChange={(e) => setForm({ ...form, deskripsi: e.target.value })} rows={3} className={inputClass + ' resize-none'} placeholder="Deskripsi singkat..." />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Harga (Rp)</label>
-                                <input type="number" value={form.harga_estimasi} onChange={(e) => setForm({ ...form, harga_estimasi: e.target.value })} className={inputClass} placeholder="50000" required min="0" />
-                            </div>
-                            <button type="submit" disabled={saving}
-                                className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-primary/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> {editing ? 'Simpan' : 'Tambah'}</>}
-                            </button>
-                        </form>
+            <Modal open={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit Layanan' : 'Tambah Layanan Baru'}>
+                <form onSubmit={handleSave} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Judul Tugas</label>
+                        <input type="text" value={form.judul_tugas} onChange={(e) => setForm({ ...form, judul_tugas: e.target.value })} className={inputClass} placeholder="Contoh: Makalah Sejarah" required />
                     </div>
-                </div>
-            )}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Kategori</label>
+                        <select value={form.kategori} onChange={(e) => setForm({ ...form, kategori: e.target.value })} className={inputClass + ' cursor-pointer'}>
+                            {kategoriOptions.map(k => <option key={k} value={k} className="bg-slate-800">{k}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Deskripsi</label>
+                        <textarea value={form.deskripsi} onChange={(e) => setForm({ ...form, deskripsi: e.target.value })} rows={3} className={inputClass + ' resize-none'} placeholder="Deskripsi singkat..." />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Harga (Rp)</label>
+                        <input type="number" value={form.harga_estimasi} onChange={(e) => setForm({ ...form, harga_estimasi: e.target.value })} className={inputClass} placeholder="50000" required min="0" />
+                    </div>
+                    <button type="submit" disabled={saving}
+                        className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-primary/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> {editing ? 'Simpan' : 'Tambah'}</>}
+                    </button>
+                </form>
+            </Modal>
 
-            {deleteTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-sm glass rounded-2xl p-6 slide-up text-center">
-                        <Trash2 className="w-12 h-12 text-red-400 mx-auto mb-3" />
-                        <h3 className="text-lg font-bold text-white mb-2">Hapus Layanan?</h3>
-                        <p className="text-sm text-slate-400 mb-6">"{deleteTarget.judul_tugas}"</p>
-                        <div className="flex gap-3">
-                            <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">Batal</button>
-                            <button onClick={handleDelete} className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-medium hover:bg-red-500/30 transition-all">Hapus</button>
-                        </div>
+            <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Hapus Layanan?" maxWidth="max-w-sm">
+                <div className="text-center">
+                    <Trash2 className="w-12 h-12 text-red-400 mx-auto mb-3" />
+                    <p className="text-sm text-slate-400 mb-6">"{deleteTarget?.judul_tugas}"</p>
+                    <div className="flex gap-3">
+                        <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">Batal</button>
+                        <button onClick={handleDelete} className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-medium hover:bg-red-500/30 transition-all">Hapus</button>
                     </div>
                 </div>
-            )}
+            </Modal>
         </div>
     )
 }
