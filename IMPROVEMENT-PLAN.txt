@@ -28,19 +28,22 @@ STATUS LEGEND:
   P1 — HIGH (Sangat penting)
 ================================================================================
 
-  [ ] #3  KelolaLayanan & AdminSettings pakai custom modal
+  [x] #3  KelolaLayanan & AdminSettings pakai custom modal
           Dua halaman ini masih buat modal <div> sendiri, bukan pakai
           Modal.jsx yang sudah accessible (focus trap, Escape, aria-modal).
           File: KelolaLayanan.jsx, AdminSettings.jsx
+          DONE: commit e1825fd — refactored to Modal.jsx
 
-  [ ] #4  Toast tidak diumumkan ke screen reader
+  [x] #4  Toast tidak diumumkan ke screen reader
           Toast container tidak punya role="alert" atau aria-live="polite".
           File: Toast.jsx
+          DONE: commit e1825fd — added role/aria-live attributes
 
-  [ ] #5  Tidak ada email verification
+  [x] #5  Tidak ada email verification
           Setelah register, user langsung masuk tanpa verifikasi email.
           Solusi: tampilkan halaman "cek email", enforce email_confirmed_at.
           File: AuthContext.jsx, Register.jsx
+          DONE: commit e1825fd — emailRedirectTo + confirmation screen
 
   [ ] #6  Keuangan fetch semua orders client-side
           Tidak ada server-side aggregation atau date filter. Bottleneck
