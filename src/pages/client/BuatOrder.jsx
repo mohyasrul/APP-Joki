@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
-import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import Modal from '../../components/Modal'
 import { formatRupiah } from '../../lib/utils'
 import { ShoppingCart, ArrowLeft, Calendar, FileText, AlertCircle, CheckCircle, Eye, Tag, X } from 'lucide-react'
 
@@ -18,8 +18,6 @@ export default function BuatOrder() {
     const [deadline, setDeadline] = useState('')
     const [loading, setLoading] = useState(false)
     const [showConfirm, setShowConfirm] = useState(false)
-
-    useBodyScrollLock(showConfirm)
 
     // Promo
     const [promoCode, setPromoCode] = useState('')
@@ -162,6 +160,7 @@ export default function BuatOrder() {
                         <div className="relative">
                             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                             <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
                                 className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
                         </div>
                     </div>
@@ -222,54 +221,49 @@ export default function BuatOrder() {
             </div>
 
             {/* Confirm Modal */}
-            {showConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-md glass rounded-2xl p-6 slide-up glow">
-                        <h2 className="text-lg font-bold text-white mb-4">Konfirmasi Pesanan</h2>
-                        <div className="space-y-3 mb-6">
-                            <div className="flex justify-between p-3 rounded-xl bg-white/5">
-                                <span className="text-sm text-slate-400">Layanan</span>
-                                <span className="text-sm font-medium text-white">{layanan.judul_tugas}</span>
-                            </div>
-                            {diskon > 0 && (
-                                <>
-                                    <div className="flex justify-between p-3 rounded-xl bg-white/5">
-                                        <span className="text-sm text-slate-400">Harga Awal</span>
-                                        <span className="text-sm text-slate-300 line-through">{formatRupiah(layanan.harga_estimasi)}</span>
-                                    </div>
-                                    <div className="flex justify-between p-3 rounded-xl bg-green-500/5">
-                                        <span className="text-sm text-green-400">Promo ({promoData?.kode})</span>
-                                        <span className="text-sm text-green-400">-{formatRupiah(diskon)}</span>
-                                    </div>
-                                </>
-                            )}
-                            <div className="flex justify-between p-3 rounded-xl bg-white/5">
-                                <span className="text-sm text-slate-400">Total Bayar</span>
-                                <span className="text-sm font-bold gradient-text">{formatRupiah(hargaFinal)}</span>
-                            </div>
-                            {deadline && (
-                                <div className="flex justify-between p-3 rounded-xl bg-white/5">
-                                    <span className="text-sm text-slate-400">Deadline</span>
-                                    <span className="text-sm text-white">{new Date(deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                                </div>
-                            )}
-                            {detail && (
-                                <div className="p-3 rounded-xl bg-white/5">
-                                    <p className="text-sm text-slate-400 mb-1">Catatan</p>
-                                    <p className="text-sm text-white">{detail}</p>
-                                </div>
-                            )}
-                        </div>
-                        <div className="flex gap-3">
-                            <button onClick={() => setShowConfirm(false)} className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">Kembali</button>
-                            <button onClick={handleSubmit} disabled={loading}
-                                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-primary/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Konfirmasi</>}
-                            </button>
-                        </div>
+            <Modal open={showConfirm} onClose={() => setShowConfirm(false)} title="Konfirmasi Pesanan">
+                <div className="space-y-3 mb-6">
+                    <div className="flex justify-between p-3 rounded-xl bg-white/5">
+                        <span className="text-sm text-slate-400">Layanan</span>
+                        <span className="text-sm font-medium text-white">{layanan.judul_tugas}</span>
                     </div>
+                    {diskon > 0 && (
+                        <>
+                            <div className="flex justify-between p-3 rounded-xl bg-white/5">
+                                <span className="text-sm text-slate-400">Harga Awal</span>
+                                <span className="text-sm text-slate-300 line-through">{formatRupiah(layanan.harga_estimasi)}</span>
+                            </div>
+                            <div className="flex justify-between p-3 rounded-xl bg-green-500/5">
+                                <span className="text-sm text-green-400">Promo ({promoData?.kode})</span>
+                                <span className="text-sm text-green-400">-{formatRupiah(diskon)}</span>
+                            </div>
+                        </>
+                    )}
+                    <div className="flex justify-between p-3 rounded-xl bg-white/5">
+                        <span className="text-sm text-slate-400">Total Bayar</span>
+                        <span className="text-sm font-bold gradient-text">{formatRupiah(hargaFinal)}</span>
+                    </div>
+                    {deadline && (
+                        <div className="flex justify-between p-3 rounded-xl bg-white/5">
+                            <span className="text-sm text-slate-400">Deadline</span>
+                            <span className="text-sm text-white">{new Date(deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                        </div>
+                    )}
+                    {detail && (
+                        <div className="p-3 rounded-xl bg-white/5">
+                            <p className="text-sm text-slate-400 mb-1">Catatan</p>
+                            <p className="text-sm text-white">{detail}</p>
+                        </div>
+                    )}
                 </div>
-            )}
+                <div className="flex gap-3">
+                    <button onClick={() => setShowConfirm(false)} className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">Kembali</button>
+                    <button onClick={handleSubmit} disabled={loading}
+                        className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-primary/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                        {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Konfirmasi</>}
+                    </button>
+                </div>
+            </Modal>
         </div>
     )
 }

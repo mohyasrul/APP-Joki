@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useToast } from '../../components/Toast'
-import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import Modal from '../../components/Modal'
 import { formatRupiah } from '../../lib/utils'
 import { Inbox, CheckCircle, XCircle, X, Loader2, Clock, DollarSign, Calendar, FileText, User } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
@@ -17,9 +17,8 @@ export default function AdminRequests() {
     const [requests, setRequests] = useState([])
     const [loading, setLoading] = useState(true)
     const [processModal, setProcessModal] = useState(null)
+    const [rejectTarget, setRejectTarget] = useState(null)
     const [currentPage, setCurrentPage] = useState(1)
-
-    useBodyScrollLock(!!processModal)
 
     const [harga, setHarga] = useState('')
     const [catatan, setCatatan] = useState('')
@@ -101,12 +100,14 @@ export default function AdminRequests() {
     }
 
     const handleReject = async (req) => {
-        await supabase.from('custom_requests').update({
+        const { error } = await supabase.from('custom_requests').update({
             status: 'rejected',
             updated_at: new Date().toISOString(),
         }).eq('id', req.id)
+        if (error) { toast.error('Gagal menolak: ' + error.message); return }
         toast.success('Request ditolak')
         fetchRequests()
+        setRejectTarget(null)
     }
 
     const pendingCount = requests.filter(r => r.status === 'pending').length
@@ -158,7 +159,7 @@ export default function AdminRequests() {
                                             className="px-4 py-2 rounded-xl bg-green-500/20 text-green-400 text-sm font-medium hover:bg-green-500/30 transition-all flex items-center gap-1.5">
                                             <CheckCircle className="w-4 h-4" /> Terima
                                         </button>
-                                        <button onClick={() => handleReject(req)}
+                                        <button onClick={() => setRejectTarget(req)}
                                             className="px-4 py-2 rounded-xl bg-red-500/20 text-red-400 text-sm font-medium hover:bg-red-500/30 transition-all flex items-center gap-1.5">
                                             <XCircle className="w-4 h-4" /> Tolak
                                         </button>
@@ -175,14 +176,9 @@ export default function AdminRequests() {
             )}
 
             {/* Accept Modal — Set Price */}
-            {processModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-md glass rounded-2xl p-6 slide-up glow">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold text-white">Terima Request</h2>
-                            <button onClick={() => setProcessModal(null)} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"><X className="w-5 h-5" /></button>
-                        </div>
-
+            <Modal open={!!processModal} onClose={() => setProcessModal(null)} title="Terima Request">
+                {processModal && (
+                    <>
                         {/* Request detail */}
                         <div className="p-4 rounded-xl bg-white/5 mb-4">
                             <p className="text-sm font-semibold text-white mb-1">{processModal.judul}</p>
@@ -212,9 +208,22 @@ export default function AdminRequests() {
                                 {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Terima & Buat Order</>}
                             </button>
                         </div>
+                    </>
+                )}
+            </Modal>
+
+            {/* Reject Confirmation Modal */}
+            <Modal open={!!rejectTarget} onClose={() => setRejectTarget(null)} title={null} showClose={false} maxWidth="max-w-sm">
+                <div className="text-center">
+                    <XCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
+                    <h3 className="text-lg font-bold text-white mb-2">Tolak Request?</h3>
+                    <p className="text-sm text-slate-400 mb-6">Request dari <span className="text-white font-medium">{rejectTarget?.profiles?.full_name || 'klien'}</span> akan ditolak.</p>
+                    <div className="flex gap-3">
+                        <button onClick={() => setRejectTarget(null)} className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">Batal</button>
+                        <button onClick={() => handleReject(rejectTarget)} className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-medium hover:bg-red-500/30 transition-all">Ya, Tolak</button>
                     </div>
                 </div>
-            )}
+            </Modal>
         </div>
     )
 }

@@ -6,6 +6,7 @@ import {
     BookOpen, ShoppingCart, LogOut, Sparkles, Settings, User, Inbox
 } from 'lucide-react'
 import NotificationBell from './NotificationBell'
+import Modal from './Modal'
 
 export default function Navbar() {
     const { profile, signOut, isAdmin } = useAuth()
@@ -109,19 +110,17 @@ export default function Navbar() {
             </div>
 
             {/* Logout Confirmation Modal */}
-            {showLogoutConfirm && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-sm glass rounded-2xl p-6 slide-up text-center">
-                        <LogOut className="w-12 h-12 text-red-400 mx-auto mb-3" />
-                        <h3 className="text-lg font-bold text-white mb-2">Keluar dari Akun?</h3>
-                        <p className="text-sm text-slate-400 mb-6">Kamu yakin ingin logout dari Jokskuy?</p>
-                        <div className="flex gap-3">
-                            <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">Batal</button>
-                            <button onClick={handleLogout} className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-medium hover:bg-red-500/30 transition-all">Keluar</button>
-                        </div>
+            <Modal open={showLogoutConfirm} onClose={() => setShowLogoutConfirm(false)} title={null} showClose={false} maxWidth="max-w-sm">
+                <div className="text-center">
+                    <LogOut className="w-12 h-12 text-red-400 mx-auto mb-3" />
+                    <h3 className="text-lg font-bold text-white mb-2">Keluar dari Akun?</h3>
+                    <p className="text-sm text-slate-400 mb-6">Kamu yakin ingin logout dari Jokskuy?</p>
+                    <div className="flex gap-3">
+                        <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">Batal</button>
+                        <button onClick={handleLogout} className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-medium hover:bg-red-500/30 transition-all">Keluar</button>
                     </div>
                 </div>
-            )}
+            </Modal>
         </nav>
     )
 }

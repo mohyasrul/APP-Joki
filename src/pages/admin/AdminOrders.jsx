@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useToast } from '../../components/Toast'
-import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import Modal from '../../components/Modal'
 import { formatRupiah } from '../../lib/utils'
 import {
     ClipboardList, Search, CheckCircle, XCircle, X, Image as ImageIcon,
@@ -56,8 +56,6 @@ export default function AdminOrders() {
 
     // View hasil modal
     const [viewHasil, setViewHasil] = useState(null)
-
-    useBodyScrollLock(!!showBukti || !!uploadModal || !!viewHasil)
 
     const fetchOrders = useCallback(async (page = currentPage, statusFilter = filter, searchTerm = search) => {
         try {
@@ -331,13 +329,9 @@ export default function AdminOrders() {
             )}
 
             {/* Bukti Transfer Modal */}
-            {showBukti && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-lg glass rounded-2xl p-6 slide-up">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold text-white">Bukti Transfer</h2>
-                            <button onClick={() => setShowBukti(null)} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"><X className="w-5 h-5" /></button>
-                        </div>
+            <Modal open={!!showBukti} onClose={() => setShowBukti(null)} title="Bukti Transfer" maxWidth="max-w-lg">
+                {showBukti && (
+                    <>
                         <p className="text-sm text-slate-400 mb-1">{showBukti.profiles?.full_name} — {showBukti.layanan?.judul_tugas}</p>
                         <p className="text-lg font-bold gradient-text mb-4">{formatRupiah(showBukti.harga_final)}</p>
                         <img src={showBukti.bukti_transfer_url} alt="Bukti" className="w-full max-h-80 object-contain rounded-xl bg-black/20 mb-4" />
@@ -351,18 +345,14 @@ export default function AdminOrders() {
                                 </button>
                             </div>
                         )}
-                    </div>
-                </div>
-            )}
+                    </>
+                )}
+            </Modal>
 
             {/* Upload Hasil Modal */}
-            {uploadModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-lg glass rounded-2xl p-6 slide-up max-h-[90vh] overflow-y-auto">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold text-white">Upload Hasil Tugas</h2>
-                            <button onClick={() => setUploadModal(null)} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"><X className="w-5 h-5" /></button>
-                        </div>
+            <Modal open={!!uploadModal} onClose={() => setUploadModal(null)} title="Upload Hasil Tugas" maxWidth="max-w-lg" scrollable>
+                {uploadModal && (
+                    <>
                         <p className="text-sm text-slate-400 mb-4">{uploadModal.layanan?.judul_tugas} — {uploadModal.profiles?.full_name}</p>
 
                         {/* Existing files */}
@@ -421,18 +411,14 @@ export default function AdminOrders() {
                                 </button>
                             )}
                         </div>
-                    </div>
-                </div>
-            )}
+                    </>
+                )}
+            </Modal>
 
             {/* View Hasil Modal */}
-            {viewHasil && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-lg glass rounded-2xl p-6 slide-up max-h-[90vh] overflow-y-auto">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold text-white">Hasil Tugas</h2>
-                            <button onClick={() => setViewHasil(null)} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"><X className="w-5 h-5" /></button>
-                        </div>
+            <Modal open={!!viewHasil} onClose={() => setViewHasil(null)} title="Hasil Tugas" maxWidth="max-w-lg" scrollable>
+                {viewHasil && (
+                    <>
                         <p className="text-sm text-slate-400 mb-4">{viewHasil.layanan?.judul_tugas} — {viewHasil.profiles?.full_name}</p>
 
                         {/* Files */}
@@ -466,9 +452,9 @@ export default function AdminOrders() {
                                 <p className="text-sm text-slate-300 whitespace-pre-wrap">{viewHasil.catatan_hasil}</p>
                             </div>
                         )}
-                    </div>
-                </div>
-            )}
+                    </>
+                )}
+            </Modal>
         </div>
     )
 }

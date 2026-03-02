@@ -95,6 +95,7 @@ export default function CustomRequest() {
                         <div className="relative">
                             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                             <input type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+                                min={new Date().toISOString().split('T')[0]}
                                 className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
                         </div>
                     </div>

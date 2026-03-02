@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
-import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import Modal from '../../components/Modal'
 import { formatRupiah } from '../../lib/utils'
 import {
     ArrowLeft, Upload, CheckCircle, Clock, FileCheck, AlertCircle,
@@ -56,9 +56,6 @@ export default function OrderDetail() {
 
     // Payment instruction popup
     const [showPaymentGuide, setShowPaymentGuide] = useState(false)
-
-    // Lock body scroll when any modal is open
-    useBodyScrollLock(showUploadConfirm || showPaymentGuide || showCancelConfirm || showRating || showRevisiConfirm)
 
     useEffect(() => {
         fetchOrder(); fetchPaymentInfo()
@@ -317,130 +314,111 @@ export default function OrderDetail() {
             {/* ===== MODALS ===== */}
 
             {/* Upload Confirm Modal */}
-            {showUploadConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-md glass rounded-2xl p-6 slide-up">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold text-white">Konfirmasi Upload</h3>
-                            <button onClick={handleCancelUpload} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"><X className="w-5 h-5" /></button>
-                        </div>
-                        <p className="text-sm text-slate-400 mb-4">Pastikan bukti transfer sudah benar sebelum mengirim.</p>
-                        {pendingPreview && (
-                            <img src={pendingPreview} alt="Preview" className="w-full max-h-72 object-contain rounded-xl bg-black/20 mb-4" />
-                        )}
-                        <p className="text-xs text-slate-500 mb-4 text-center">
-                            📎 {pendingFile?.name} • {pendingFile && formatSize(pendingFile.size)}
-                        </p>
-                        <div className="flex gap-3">
-                            <button onClick={handleCancelUpload}
-                                className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">
-                                Ganti File
-                            </button>
-                            <button onClick={handleConfirmUpload} disabled={uploading}
-                                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                                {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Upload className="w-5 h-5" /> Kirim Bukti</>}
-                            </button>
-                        </div>
-                    </div>
+            <Modal open={showUploadConfirm} onClose={handleCancelUpload} title="Konfirmasi Upload">
+                <p className="text-sm text-slate-400 mb-4">Pastikan bukti transfer sudah benar sebelum mengirim.</p>
+                {pendingPreview && (
+                    <img src={pendingPreview} alt="Preview" className="w-full max-h-72 object-contain rounded-xl bg-black/20 mb-4" />
+                )}
+                <p className="text-xs text-slate-500 mb-4 text-center">
+                    📎 {pendingFile?.name} • {pendingFile && formatSize(pendingFile.size)}
+                </p>
+                <div className="flex gap-3">
+                    <button onClick={handleCancelUpload}
+                        className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">
+                        Ganti File
+                    </button>
+                    <button onClick={handleConfirmUpload} disabled={uploading}
+                        className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                        {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Upload className="w-5 h-5" /> Kirim Bukti</>}
+                    </button>
                 </div>
-            )}
+            </Modal>
 
             {/* Payment Guide Modal */}
-            {showPaymentGuide && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-md glass rounded-2xl p-6 slide-up">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                <HelpCircle className="w-5 h-5 text-primary-light" /> Cara Pembayaran
-                            </h3>
-                            <button onClick={() => setShowPaymentGuide(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"><X className="w-5 h-5" /></button>
+            <Modal open={showPaymentGuide} onClose={() => setShowPaymentGuide(false)} title="Cara Pembayaran">
+                <div className="space-y-4">
+                    <div className="flex gap-3">
+                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="text-xs font-bold text-primary-light">1</span>
                         </div>
-                        <div className="space-y-4">
-                            <div className="flex gap-3">
-                                <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                                    <span className="text-xs font-bold text-primary-light">1</span>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-white">Transfer sesuai nominal</p>
-                                    <p className="text-xs text-slate-400">Transfer tepat <span className="text-primary-light font-semibold">{formatRupiah(order.harga_final)}</span> ke rekening yang tertera.</p>
-                                </div>
-                            </div>
-                            <div className="flex gap-3">
-                                <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                                    <span className="text-xs font-bold text-primary-light">2</span>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-white">Screenshot bukti transfer</p>
-                                    <p className="text-xs text-slate-400">Ambil screenshot dari aplikasi banking / e-wallet yang menunjukkan bukti berhasil transfer.</p>
-                                </div>
-                            </div>
-                            <div className="flex gap-3">
-                                <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                                    <span className="text-xs font-bold text-primary-light">3</span>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-white">Upload bukti di bawah</p>
-                                    <p className="text-xs text-slate-400">Klik area upload, pilih foto bukti, periksa preview, lalu kirim.</p>
-                                </div>
-                            </div>
-                            <div className="flex gap-3">
-                                <div className="w-7 h-7 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                                    <span className="text-xs font-bold text-green-400">4</span>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-white">Tunggu verifikasi admin</p>
-                                    <p className="text-xs text-slate-400">Admin akan memverifikasi pembayaran. Setelah dikonfirmasi, tugas akan mulai dikerjakan.</p>
-                                </div>
-                            </div>
+                        <div>
+                            <p className="text-sm font-medium text-white">Transfer sesuai nominal</p>
+                            <p className="text-xs text-slate-400">Transfer tepat <span className="text-primary-light font-semibold">{formatRupiah(order.harga_final)}</span> ke rekening yang tertera.</p>
                         </div>
-                        <button onClick={() => setShowPaymentGuide(false)}
-                            className="w-full mt-5 py-2.5 rounded-xl bg-primary/20 text-primary-light font-medium text-sm hover:bg-primary/30 transition-all">
-                            Mengerti 👍
-                        </button>
+                    </div>
+                    <div className="flex gap-3">
+                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="text-xs font-bold text-primary-light">2</span>
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-white">Screenshot bukti transfer</p>
+                            <p className="text-xs text-slate-400">Ambil screenshot dari aplikasi banking / e-wallet yang menunjukkan bukti berhasil transfer.</p>
+                        </div>
+                    </div>
+                    <div className="flex gap-3">
+                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="text-xs font-bold text-primary-light">3</span>
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-white">Upload bukti di bawah</p>
+                            <p className="text-xs text-slate-400">Klik area upload, pilih foto bukti, periksa preview, lalu kirim.</p>
+                        </div>
+                    </div>
+                    <div className="flex gap-3">
+                        <div className="w-7 h-7 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="text-xs font-bold text-green-400">4</span>
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-white">Tunggu verifikasi admin</p>
+                            <p className="text-xs text-slate-400">Admin akan memverifikasi pembayaran. Setelah dikonfirmasi, tugas akan mulai dikerjakan.</p>
+                        </div>
                     </div>
                 </div>
-            )}
+                <button onClick={() => setShowPaymentGuide(false)}
+                    className="w-full mt-5 py-2.5 rounded-xl bg-primary/20 text-primary-light font-medium text-sm hover:bg-primary/30 transition-all">
+                    Mengerti 👍
+                </button>
+            </Modal>
 
             {/* Cancel Confirm */}
-            {showCancelConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-sm glass rounded-2xl p-6 slide-up text-center">
-                        <Ban className="w-12 h-12 text-red-400 mx-auto mb-3" /><h3 className="text-lg font-bold text-white mb-2">Batalkan Pesanan?</h3><p className="text-sm text-slate-400 mb-6">Tidak bisa dibatalkan.</p>
-                        <div className="flex gap-3">
-                            <button onClick={() => setShowCancelConfirm(false)} className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">Tidak</button>
-                            <button onClick={handleCancelOrder} className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-medium hover:bg-red-500/30 transition-all">Ya, Batalkan</button>
-                        </div>
+            <Modal open={showCancelConfirm} onClose={() => setShowCancelConfirm(false)} title={null} showClose={false} maxWidth="max-w-sm">
+                <div className="text-center">
+                    <Ban className="w-12 h-12 text-red-400 mx-auto mb-3" />
+                    <h3 className="text-lg font-bold text-white mb-2">Batalkan Pesanan?</h3>
+                    <p className="text-sm text-slate-400 mb-6">Tidak bisa dibatalkan.</p>
+                    <div className="flex gap-3">
+                        <button onClick={() => setShowCancelConfirm(false)} className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">Tidak</button>
+                        <button onClick={handleCancelOrder} className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-medium hover:bg-red-500/30 transition-all">Ya, Batalkan</button>
                     </div>
                 </div>
-            )}
+            </Modal>
+
             {/* Rating */}
-            {showRating && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-sm glass rounded-2xl p-6 slide-up">
-                        <h3 className="text-lg font-bold text-white mb-4 text-center">Beri Rating</h3>
-                        <div className="flex justify-center gap-2 mb-4">{[1, 2, 3, 4, 5].map(s => <button key={s} onClick={() => setRatingValue(s)} onMouseEnter={() => setRatingHover(s)} onMouseLeave={() => setRatingHover(0)}><Star className={`w-8 h-8 transition-colors ${s <= (ratingHover || ratingValue) ? 'text-yellow-400 fill-yellow-400' : 'text-slate-600'}`} /></button>)}</div>
-                        <textarea value={reviewText} onChange={(e) => setReviewText(e.target.value)} rows={3} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all resize-none mb-4" placeholder="Tulis review (opsional)..." />
-                        <div className="flex gap-3">
-                            <button onClick={() => setShowRating(false)} className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">Batal</button>
-                            <button onClick={handleSubmitRating} disabled={submittingRating} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                                {submittingRating ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Star className="w-5 h-5" /> Kirim</>}
-                            </button>
-                        </div>
-                    </div>
+            <Modal open={showRating} onClose={() => setShowRating(false)} title={null} showClose={false} maxWidth="max-w-sm">
+                <h3 className="text-lg font-bold text-white mb-4 text-center">Beri Rating</h3>
+                <div className="flex justify-center gap-2 mb-4">{[1, 2, 3, 4, 5].map(s => <button key={s} onClick={() => setRatingValue(s)} onMouseEnter={() => setRatingHover(s)} onMouseLeave={() => setRatingHover(0)}><Star className={`w-8 h-8 transition-colors ${s <= (ratingHover || ratingValue) ? 'text-yellow-400 fill-yellow-400' : 'text-slate-600'}`} /></button>)}</div>
+                <textarea value={reviewText} onChange={(e) => setReviewText(e.target.value)} rows={3} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all resize-none mb-4" placeholder="Tulis review (opsional)..." />
+                <div className="flex gap-3">
+                    <button onClick={() => setShowRating(false)} className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">Batal</button>
+                    <button onClick={handleSubmitRating} disabled={submittingRating} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                        {submittingRating ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Star className="w-5 h-5" /> Kirim</>}
+                    </button>
                 </div>
-            )}
+            </Modal>
+
             {/* Revisi */}
-            {showRevisiConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-sm glass rounded-2xl p-6 slide-up text-center">
-                        <RotateCcw className="w-12 h-12 text-blue-400 mx-auto mb-3" /><h3 className="text-lg font-bold text-white mb-2">Request Revisi?</h3><p className="text-sm text-slate-400 mb-1">Tersisa: {revisiLeft}x</p><p className="text-xs text-slate-500 mb-6">Status kembali ke "Sedang Dikerjakan"</p>
-                        <div className="flex gap-3">
-                            <button onClick={() => setShowRevisiConfirm(false)} className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">Batal</button>
-                            <button onClick={handleRequestRevisi} className="flex-1 py-2.5 rounded-xl bg-blue-500/20 text-blue-400 font-medium hover:bg-blue-500/30 transition-all">Ya, Revisi</button>
-                        </div>
+            <Modal open={showRevisiConfirm} onClose={() => setShowRevisiConfirm(false)} title={null} showClose={false} maxWidth="max-w-sm">
+                <div className="text-center">
+                    <RotateCcw className="w-12 h-12 text-blue-400 mx-auto mb-3" />
+                    <h3 className="text-lg font-bold text-white mb-2">Request Revisi?</h3>
+                    <p className="text-sm text-slate-400 mb-1">Tersisa: {revisiLeft}x</p>
+                    <p className="text-xs text-slate-500 mb-6">Status kembali ke "Sedang Dikerjakan"</p>
+                    <div className="flex gap-3">
+                        <button onClick={() => setShowRevisiConfirm(false)} className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all">Batal</button>
+                        <button onClick={handleRequestRevisi} className="flex-1 py-2.5 rounded-xl bg-blue-500/20 text-blue-400 font-medium hover:bg-blue-500/30 transition-all">Ya, Revisi</button>
                     </div>
                 </div>
-            )}
+            </Modal>
         </div>
     )
 }
