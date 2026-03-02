@@ -1,19 +1,63 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatRupiah } from '../../lib/utils'
 import { useToast } from '../../components/Toast'
 import { DollarSign, TrendingUp, Calendar, Download, Loader2 } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
+const BULAN_LABEL = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+
 export default function Keuangan() {
+    const [summary, setSummary] = useState(null)
     const [orders, setOrders] = useState([])
+    const [totalCount, setTotalCount] = useState(0)
     const [loading, setLoading] = useState(true)
     const [currentPage, setCurrentPage] = useState(1)
     const toast = useToast()
 
-    useEffect(() => { fetchOrders() }, [])
+    const fetchSummary = useCallback(async () => {
+        const { data, error } = await supabase.rpc('get_keuangan_summary')
+        if (error) throw error
+        setSummary(data)
+    }, [])
 
-    const fetchOrders = async () => {
+    const fetchTransactions = useCallback(async (page = 1) => {
+        const from = (page - 1) * ITEMS_PER_PAGE
+        const to = from + ITEMS_PER_PAGE - 1
+        const { data, error, count } = await supabase
+            .from('orders')
+            .select('*, layanan(judul_tugas), profiles(full_name)', { count: 'exact' })
+            .eq('status_pembayaran', 'Lunas')
+            .order('created_at', { ascending: false })
+            .range(from, to)
+        if (error) throw error
+        setOrders(data || [])
+        setTotalCount(count || 0)
+    }, [])
+
+    useEffect(() => {
+        (async () => {
+            try {
+                await Promise.all([fetchSummary(), fetchTransactions(1)])
+            } catch (err) {
+                console.error('Failed to fetch keuangan:', err)
+                toast.error('Gagal memuat data keuangan')
+            } finally {
+                setLoading(false)
+            }
+        })()
+    }, [])
+
+    useEffect(() => {
+        if (!loading) fetchTransactions(currentPage).catch(() => toast.error('Gagal memuat transaksi'))
+    }, [currentPage])
+
+    const { total = 0, week_total: weekTotal = 0, month_total: monthTotal = 0, growth = 0, monthly = [] } = summary || {}
+    const months = (monthly || []).map(m => ({ label: BULAN_LABEL[m.bulan], value: m.value }))
+    const maxChart = Math.max(...months.map(m => m.value), 1)
+
+    // CSV Export — fetches all on demand
+    const exportCSV = async () => {
         try {
             const { data, error } = await supabase
                 .from('orders')
@@ -21,55 +65,22 @@ export default function Keuangan() {
                 .eq('status_pembayaran', 'Lunas')
                 .order('created_at', { ascending: false })
             if (error) throw error
-            setOrders(data || [])
+            if (!data?.length) { toast.error('Tidak ada data untuk diexport'); return }
+            const header = 'Tanggal,Klien,Layanan,Harga,Diskon,Kode Promo\n'
+            const rows = data.map(o =>
+                `${new Date(o.created_at).toLocaleDateString('id-ID')},${o.profiles?.full_name || '-'},${o.layanan?.judul_tugas || '-'},${o.harga_final},${o.diskon || 0},${o.kode_promo || '-'}`
+            ).join('\n')
+            const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `laporan_keuangan_${new Date().toISOString().slice(0, 10)}.csv`
+            a.click()
+            URL.revokeObjectURL(url)
+            toast.success('Laporan berhasil diexport!')
         } catch (err) {
-            console.error('Failed to fetch keuangan:', err)
-            toast.error('Gagal memuat data keuangan')
-        } finally {
-            setLoading(false)
+            toast.error('Gagal export: ' + err.message)
         }
-    }
-
-    const now = new Date()
-    const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay())
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0)
-
-    const total = orders.reduce((sum, o) => sum + o.harga_final, 0)
-    const weekTotal = orders.filter(o => new Date(o.created_at) >= startOfWeek).reduce((s, o) => s + o.harga_final, 0)
-    const monthTotal = orders.filter(o => new Date(o.created_at) >= startOfMonth).reduce((s, o) => s + o.harga_final, 0)
-    const prevMonthTotal = orders.filter(o => { const d = new Date(o.created_at); return d >= startOfPrevMonth && d <= endOfPrevMonth }).reduce((s, o) => s + o.harga_final, 0)
-    const growth = prevMonthTotal ? Math.round(((monthTotal - prevMonthTotal) / prevMonthTotal) * 100) : monthTotal > 0 ? 100 : 0
-
-    // Monthly chart data
-    const months = []
-    for (let i = 5; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-        const label = d.toLocaleDateString('id-ID', { month: 'short' })
-        const startM = new Date(d.getFullYear(), d.getMonth(), 1)
-        const endM = new Date(d.getFullYear(), d.getMonth() + 1, 0)
-        const val = orders.filter(o => { const od = new Date(o.created_at); return od >= startM && od <= endM }).reduce((s, o) => s + o.harga_final, 0)
-        months.push({ label, value: val })
-    }
-    const maxChart = Math.max(...months.map(m => m.value), 1)
-
-    // CSV Export
-    const exportCSV = () => {
-        if (orders.length === 0) { toast.error('Tidak ada data untuk diexport'); return }
-        const header = 'Tanggal,Klien,Layanan,Harga,Diskon,Kode Promo\n'
-        const rows = orders.map(o =>
-            `${new Date(o.created_at).toLocaleDateString('id-ID')},${o.profiles?.full_name || '-'},${o.layanan?.judul_tugas || '-'},${o.harga_final},${o.diskon || 0},${o.kode_promo || '-'}`
-        ).join('\n')
-        const csv = header + rows
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `laporan_keuangan_${new Date().toISOString().slice(0, 10)}.csv`
-        a.click()
-        URL.revokeObjectURL(url)
-        toast.success('Laporan berhasil diexport!')
     }
 
     if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
@@ -130,12 +141,12 @@ export default function Keuangan() {
 
             {/* Transactions */}
             <div className="glass rounded-2xl p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Riwayat Transaksi ({orders.length})</h3>
+                <h3 className="text-lg font-semibold text-white mb-4">Riwayat Transaksi ({totalCount})</h3>
                 {orders.length === 0 ? (
                     <p className="text-slate-500 text-center py-8">Belum ada transaksi selesai</p>
                 ) : (
                     <div className="space-y-3">
-                        {orders.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE).map(o => (
+                        {orders.map(o => (
                             <div key={o.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5">
                                 <div>
                                     <p className="text-sm font-medium text-white">{o.layanan?.judul_tugas}</p>
@@ -152,8 +163,8 @@ export default function Keuangan() {
                         ))}
                     </div>
                 )}
-                {orders.length > ITEMS_PER_PAGE && (
-                    <Pagination currentPage={currentPage} totalItems={orders.length} onPageChange={setCurrentPage} />
+                {totalCount > ITEMS_PER_PAGE && (
+                    <Pagination currentPage={currentPage} totalItems={totalCount} onPageChange={setCurrentPage} />
                 )}
             </div>
         </div>

@@ -69,41 +69,36 @@ export default function AdminOrders() {
             setTotalOrderCount(allCount || 0)
             setPendingVerifyCount(pvCount || 0)
 
-            // Build main query with server-side filter
-            let query = supabase
-                .from('orders')
-                .select('*, layanan(judul_tugas), profiles(full_name, phone)', { count: 'exact' })
-                .order('created_at', { ascending: false })
+            if (searchTerm.trim()) {
+                // Server-side search via RPC (ILIKE across joined tables)
+                const { data, error } = await supabase.rpc('search_orders', {
+                    p_term: searchTerm.trim(),
+                    p_status: statusFilter,
+                    p_limit: ITEMS_PER_PAGE,
+                    p_offset: (page - 1) * ITEMS_PER_PAGE
+                })
+                if (error) throw error
+                setOrders(data?.data || [])
+                setTotalCount(data?.count || 0)
+            } else {
+                // Regular PostgREST query with server-side pagination
+                let query = supabase
+                    .from('orders')
+                    .select('*, layanan(judul_tugas), profiles(full_name, phone)', { count: 'exact' })
+                    .order('created_at', { ascending: false })
 
-            if (statusFilter === 'Menunggu Verifikasi') {
-                query = query.eq('status_pembayaran', 'Menunggu Verifikasi')
-            } else if (statusFilter !== 'Semua') {
-                query = query.eq('status_pekerjaan', statusFilter)
-            }
+                if (statusFilter === 'Menunggu Verifikasi') {
+                    query = query.eq('status_pembayaran', 'Menunggu Verifikasi')
+                } else if (statusFilter !== 'Semua') {
+                    query = query.eq('status_pekerjaan', statusFilter)
+                }
 
-            // When searching: fetch all matching status, then search client-side
-            // (Supabase doesn't support text search across joined tables)
-            if (!searchTerm.trim()) {
                 const from = (page - 1) * ITEMS_PER_PAGE
                 const to = from + ITEMS_PER_PAGE - 1
                 query = query.range(from, to)
-            }
 
-            const { data, error, count } = await query
-            if (error) throw error
-
-            if (searchTerm.trim()) {
-                const term = searchTerm.toLowerCase()
-                const searched = (data || []).filter(o =>
-                    (o.layanan?.judul_tugas || '').toLowerCase().includes(term) ||
-                    (o.profiles?.full_name || '').toLowerCase().includes(term) ||
-                    (o.detail_tambahan || '').toLowerCase().includes(term)
-                )
-                // Paginate search results client-side
-                const from = (page - 1) * ITEMS_PER_PAGE
-                setOrders(searched.slice(from, from + ITEMS_PER_PAGE))
-                setTotalCount(searched.length)
-            } else {
+                const { data, error, count } = await query
+                if (error) throw error
                 setOrders(data || [])
                 setTotalCount(count || 0)
             }
