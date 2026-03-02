@@ -18,25 +18,26 @@ export default function AdminDashboard() {
     }, [])
 
     const fetchDashboard = async () => {
-        const { data: orders } = await supabase
-            .from('orders')
-            .select('*, layanan(judul_tugas), profiles(full_name)')
-            .order('created_at', { ascending: false })
+        try {
+            const { data, error } = await supabase.rpc('get_dashboard_stats')
+            if (error) throw error
 
-        if (orders) {
-            const now = new Date()
-            const thisMonth = orders.filter(o => {
-                const d = new Date(o.created_at)
-                return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-            })
-
-            setStats({
-                totalIncome: orders.filter(o => o.status_pembayaran === 'Lunas').reduce((sum, o) => sum + (o.harga_final || 0), 0),
-                activeOrders: orders.filter(o => ['Menunggu Diproses', 'Sedang Dikerjakan'].includes(o.status_pekerjaan)).length,
-                pendingVerify: orders.filter(o => o.status_pembayaran === 'Menunggu Verifikasi').length,
-                completedOrders: orders.filter(o => o.status_pekerjaan === 'Selesai').length,
-            })
-            setRecentOrders(orders.slice(0, 5))
+            if (data) {
+                setStats({
+                    totalIncome: data.totalIncome || 0,
+                    activeOrders: data.activeOrders || 0,
+                    pendingVerify: data.pendingVerify || 0,
+                    completedOrders: data.completedOrders || 0,
+                })
+                // Map RPC response to match component expectations
+                setRecentOrders((data.recentOrders || []).map(o => ({
+                    ...o,
+                    layanan: { judul_tugas: o.layanan_judul },
+                    profiles: { full_name: o.client_name },
+                })))
+            }
+        } catch (err) {
+            console.error('Dashboard fetch error:', err)
         }
         setLoading(false)
     }

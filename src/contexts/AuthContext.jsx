@@ -34,13 +34,20 @@ export function AuthProvider({ children }) {
     }, [])
 
     const fetchProfile = async (userId) => {
-        const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single()
-        setProfile(data)
-        setLoading(false)
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single()
+            if (error) throw error
+            setProfile(data)
+        } catch (err) {
+            console.error('Failed to fetch profile:', err)
+            setProfile(null)
+        } finally {
+            setLoading(false)
+        }
     }
 
     const signUp = async (email, password, fullName, phone) => {

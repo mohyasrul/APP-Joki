@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
 import { formatRupiah } from '../../lib/utils'
-import { ShoppingCart, CheckCircle, XCircle, Eye, Package, Clock, Inbox, Star } from 'lucide-react'
+import { ShoppingCart, CheckCircle, XCircle, Eye, Package, Clock, Inbox, Star, AlertCircle, RefreshCw } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 const STATUS_COLORS = {
@@ -28,6 +28,7 @@ export default function PesananSaya() {
     const [orders, setOrders] = useState([])
     const [requests, setRequests] = useState([])
     const [loading, setLoading] = useState(true)
+    const [fetchError, setFetchError] = useState(null)
     const [filter, setFilter] = useState('Semua')
     const [currentPage, setCurrentPage] = useState(1)
     const [reqPage, setReqPage] = useState(1)
@@ -73,14 +74,27 @@ export default function PesananSaya() {
     }, [])
 
     const fetchOrders = async () => {
-        const { data } = await supabase.from('orders').select('*, layanan(judul_tugas)').eq('client_id', user.id).order('created_at', { ascending: false })
-        setOrders(data || [])
-        setLoading(false)
+        try {
+            setFetchError(null)
+            const { data, error } = await supabase.from('orders').select('*, layanan(judul_tugas)').eq('client_id', user.id).order('created_at', { ascending: false })
+            if (error) throw error
+            setOrders(data || [])
+        } catch (err) {
+            console.error('Failed to fetch orders:', err)
+            setFetchError('Gagal memuat pesanan. Silakan coba lagi.')
+        } finally {
+            setLoading(false)
+        }
     }
 
     const fetchRequests = async () => {
-        const { data } = await supabase.from('custom_requests').select('*').eq('client_id', user.id).order('created_at', { ascending: false })
-        setRequests(data || [])
+        try {
+            const { data, error } = await supabase.from('custom_requests').select('*').eq('client_id', user.id).order('created_at', { ascending: false })
+            if (error) throw error
+            setRequests(data || [])
+        } catch (err) {
+            console.error('Failed to fetch requests:', err)
+        }
     }
 
     const filters = ['Semua', 'Menunggu Diproses', 'Sedang Dikerjakan', 'Selesai']
@@ -152,6 +166,15 @@ export default function PesananSaya() {
             {/* Orders */}
             {loading ? (
                 <div className="space-y-4">{[1, 2, 3].map(i => <div key={i} className="glass rounded-2xl p-5 animate-pulse"><div className="h-5 bg-white/10 rounded w-1/3 mb-3" /><div className="h-4 bg-white/5 rounded w-1/2" /></div>)}</div>
+            ) : fetchError ? (
+                <div className="glass rounded-2xl p-12 text-center">
+                    <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-slate-300 mb-2">{fetchError}</h3>
+                    <button onClick={() => { setLoading(true); fetchOrders(); fetchRequests() }}
+                        className="mt-2 px-5 py-2.5 rounded-xl bg-primary/20 text-primary-light font-medium text-sm hover:bg-primary/30 transition-all inline-flex items-center gap-2">
+                        <RefreshCw className="w-4 h-4" /> Coba Lagi
+                    </button>
+                </div>
             ) : filtered.length === 0 ? (
                 <div className="glass rounded-2xl p-12 text-center">
                     <Package className="w-12 h-12 text-slate-600 mx-auto mb-4" />

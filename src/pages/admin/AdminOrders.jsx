@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useToast } from '../../components/Toast'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
@@ -41,8 +41,12 @@ export default function AdminOrders() {
     const [filter, setFilter] = useState('Semua')
     const [search, setSearch] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
+    const [totalCount, setTotalCount] = useState(0)
+    const [totalOrderCount, setTotalOrderCount] = useState(0)
+    const [pendingVerifyCount, setPendingVerifyCount] = useState(0)
     const [showBukti, setShowBukti] = useState(null)
     const toast = useToast()
+    const searchTimer = useRef(null)
 
     // Upload hasil modal
     const [uploadModal, setUploadModal] = useState(null)
@@ -54,6 +58,64 @@ export default function AdminOrders() {
     const [viewHasil, setViewHasil] = useState(null)
 
     useBodyScrollLock(!!showBukti || !!uploadModal || !!viewHasil)
+
+    const fetchOrders = useCallback(async (page = currentPage, statusFilter = filter, searchTerm = search) => {
+        try {
+            setLoading(true)
+
+            // Get total order count + pending verify count (lightweight)
+            const [{ count: allCount }, { count: pvCount }] = await Promise.all([
+                supabase.from('orders').select('id', { count: 'exact', head: true }),
+                supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status_pembayaran', 'Menunggu Verifikasi'),
+            ])
+            setTotalOrderCount(allCount || 0)
+            setPendingVerifyCount(pvCount || 0)
+
+            // Build main query with server-side filter
+            let query = supabase
+                .from('orders')
+                .select('*, layanan(judul_tugas), profiles(full_name, phone)', { count: 'exact' })
+                .order('created_at', { ascending: false })
+
+            if (statusFilter === 'Menunggu Verifikasi') {
+                query = query.eq('status_pembayaran', 'Menunggu Verifikasi')
+            } else if (statusFilter !== 'Semua') {
+                query = query.eq('status_pekerjaan', statusFilter)
+            }
+
+            // When searching: fetch all matching status, then search client-side
+            // (Supabase doesn't support text search across joined tables)
+            if (!searchTerm.trim()) {
+                const from = (page - 1) * ITEMS_PER_PAGE
+                const to = from + ITEMS_PER_PAGE - 1
+                query = query.range(from, to)
+            }
+
+            const { data, error, count } = await query
+            if (error) throw error
+
+            if (searchTerm.trim()) {
+                const term = searchTerm.toLowerCase()
+                const searched = (data || []).filter(o =>
+                    (o.layanan?.judul_tugas || '').toLowerCase().includes(term) ||
+                    (o.profiles?.full_name || '').toLowerCase().includes(term) ||
+                    (o.detail_tambahan || '').toLowerCase().includes(term)
+                )
+                // Paginate search results client-side
+                const from = (page - 1) * ITEMS_PER_PAGE
+                setOrders(searched.slice(from, from + ITEMS_PER_PAGE))
+                setTotalCount(searched.length)
+            } else {
+                setOrders(data || [])
+                setTotalCount(count || 0)
+            }
+        } catch (err) {
+            console.error('Failed to fetch orders:', err)
+            toast.error('Gagal memuat data order')
+        } finally {
+            setLoading(false)
+        }
+    }, [currentPage, filter, search])
 
     useEffect(() => {
         fetchOrders()
@@ -71,20 +133,29 @@ export default function AdminOrders() {
         return () => { supabase.removeChannel(channel) }
     }, [])
 
-    const fetchOrders = async () => {
-        const { data } = await supabase.from('orders').select('*, layanan(judul_tugas), profiles(full_name, phone)').order('created_at', { ascending: false })
-        setOrders(data || [])
-        setLoading(false)
-    }
+    // Refetch when filter or page changes
+    useEffect(() => { fetchOrders(currentPage, filter, search) }, [filter, currentPage])
+
+    // Debounced search
+    useEffect(() => {
+        if (searchTimer.current) clearTimeout(searchTimer.current)
+        searchTimer.current = setTimeout(() => {
+            setCurrentPage(1)
+            fetchOrders(1, filter, search)
+        }, 350)
+        return () => { if (searchTimer.current) clearTimeout(searchTimer.current) }
+    }, [search])
 
     const handleVerifikasi = async (orderId, accept) => {
-        await supabase.from('orders').update({ status_pembayaran: accept ? 'Lunas' : 'Belum Bayar', ...(accept ? {} : { bukti_transfer_url: null }) }).eq('id', orderId)
+        const { error } = await supabase.from('orders').update({ status_pembayaran: accept ? 'Lunas' : 'Belum Bayar', ...(accept ? {} : { bukti_transfer_url: null }) }).eq('id', orderId)
+        if (error) { toast.error('Gagal verifikasi: ' + error.message); return }
         toast.success(accept ? 'Pembayaran diterima ✅' : 'Pembayaran ditolak')
         fetchOrders(); setShowBukti(null)
     }
 
     const handleUpdateStatus = async (orderId, newStatus) => {
-        await supabase.from('orders').update({ status_pekerjaan: newStatus }).eq('id', orderId)
+        const { error } = await supabase.from('orders').update({ status_pekerjaan: newStatus }).eq('id', orderId)
+        if (error) { toast.error('Gagal update status: ' + error.message); return }
         toast.success(`Status diubah ke "${newStatus}"`)
         fetchOrders()
     }
@@ -139,18 +210,6 @@ export default function AdminOrders() {
     const isOverdue = (d) => d && new Date(d) < new Date()
 
     const filters = ['Semua', 'Menunggu Verifikasi', 'Menunggu Diproses', 'Sedang Dikerjakan', 'Selesai']
-    const filtered = orders.filter(o => {
-        if (filter === 'Menunggu Verifikasi') return o.status_pembayaran === 'Menunggu Verifikasi'
-        if (filter !== 'Semua') return o.status_pekerjaan === filter
-        return true
-    }).filter(o =>
-        (o.layanan?.judul_tugas || '').toLowerCase().includes(search.toLowerCase()) ||
-        (o.profiles?.full_name || '').toLowerCase().includes(search.toLowerCase())
-    )
-    const paginatedOrders = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
-
-    // Reset page when filter/search changes
-    useEffect(() => { setCurrentPage(1) }, [filter, search])
 
     const formatSize = (bytes) => {
         if (bytes < 1024) return bytes + ' B'
@@ -165,7 +224,7 @@ export default function AdminOrders() {
                     <h1 className="text-2xl font-bold text-white flex items-center gap-2">
                         <ClipboardList className="w-7 h-7 text-primary-light" /> Manajemen Order
                     </h1>
-                    <p className="text-sm text-slate-400 mt-1">{orders.length} total order</p>
+                    <p className="text-sm text-slate-400 mt-1">{totalOrderCount} total order</p>
                 </div>
                 <div className="relative w-full sm:w-72">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
@@ -181,9 +240,9 @@ export default function AdminOrders() {
                         className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${filter === f ? 'bg-primary/20 text-primary-light border border-primary/30' : 'glass text-slate-400 hover:text-white'}`}>
                         {f === 'Menunggu Verifikasi' && <AlertTriangle className="w-3.5 h-3.5" />}
                         {f}
-                        {f === 'Menunggu Verifikasi' && orders.filter(o => o.status_pembayaran === 'Menunggu Verifikasi').length > 0 && (
+                        {f === 'Menunggu Verifikasi' && pendingVerifyCount > 0 && (
                             <span className="w-5 h-5 rounded-full bg-yellow-500 text-black text-xs flex items-center justify-center font-bold badge-pulse">
-                                {orders.filter(o => o.status_pembayaran === 'Menunggu Verifikasi').length}
+                                {pendingVerifyCount}
                             </span>
                         )}
                     </button>
@@ -193,14 +252,14 @@ export default function AdminOrders() {
             {/* Orders List */}
             {loading ? (
                 <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="glass rounded-2xl p-5 h-20 animate-pulse" />)}</div>
-            ) : filtered.length === 0 ? (
+            ) : orders.length === 0 ? (
                 <div className="glass rounded-2xl p-12 text-center">
                     <ClipboardList className="w-12 h-12 text-slate-600 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-slate-300">Tidak ada order</h3>
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {paginatedOrders.map(order => {
+                    {orders.map(order => {
                         const hasHasil = (order.hasil_files?.length > 0) || order.hasil_url || order.catatan_hasil
                         return (
                             <div key={order.id} className={`glass rounded-2xl p-5 transition-all hover:bg-white/[0.03] ${isOverdue(order.tenggat_waktu) && !['Selesai', 'Batal'].includes(order.status_pekerjaan) ? 'border border-red-500/30' :
@@ -267,8 +326,8 @@ export default function AdminOrders() {
                 </div>
             )}
 
-            {filtered.length > ITEMS_PER_PAGE && (
-                <Pagination currentPage={currentPage} totalItems={filtered.length} onPageChange={setCurrentPage} />
+            {totalCount > ITEMS_PER_PAGE && (
+                <Pagination currentPage={currentPage} totalItems={totalCount} onPageChange={setCurrentPage} />
             )}
 
             {/* Bukti Transfer Modal */}

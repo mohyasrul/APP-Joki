@@ -90,12 +90,24 @@ export default function OrderDetail() {
     }, [id])
 
     const fetchOrder = async () => {
-        const { data } = await supabase.from('orders').select('*, layanan(*)').eq('id', id).single()
-        setOrder(data); setLoading(false)
+        try {
+            const { data, error } = await supabase.from('orders').select('*, layanan(*)').eq('id', id).single()
+            if (error) throw error
+            setOrder(data)
+        } catch (err) {
+            console.error('Failed to fetch order:', err)
+            setOrder(null)
+        } finally {
+            setLoading(false)
+        }
     }
     const fetchPaymentInfo = async () => {
-        const { data } = await supabase.from('settings').select('data').eq('id', 'payment_info').single()
-        if (data?.data) setPaymentInfo(data.data)
+        try {
+            const { data } = await supabase.from('settings').select('data').eq('id', 'payment_info').single()
+            if (data?.data) setPaymentInfo(data.data)
+        } catch (err) {
+            console.error('Failed to fetch payment info:', err)
+        }
     }
 
     // Step 1: Select file → show preview
@@ -148,13 +160,15 @@ export default function OrderDetail() {
     const handleSubmitRating = async () => {
         if (!ratingValue) { toast.error('Pilih rating minimal 1 bintang'); return }
         setSubmittingRating(true)
-        await supabase.from('orders').update({ rating: ratingValue, review: reviewText }).eq('id', id)
+        const { error } = await supabase.from('orders').update({ rating: ratingValue, review: reviewText }).eq('id', id)
+        if (error) { toast.error('Gagal mengirim review: ' + error.message); setSubmittingRating(false); return }
         toast.success('Terima kasih atas review kamu! ⭐'); await fetchOrder()
         setSubmittingRating(false); setShowRating(false)
     }
 
     const handleRequestRevisi = async () => {
-        await supabase.from('orders').update({ status_pekerjaan: 'Sedang Dikerjakan', jumlah_revisi: (order.jumlah_revisi || 0) + 1 }).eq('id', id)
+        const { error } = await supabase.from('orders').update({ status_pekerjaan: 'Sedang Dikerjakan', jumlah_revisi: (order.jumlah_revisi || 0) + 1 }).eq('id', id)
+        if (error) { toast.error('Gagal request revisi: ' + error.message); return }
         toast.success('Request revisi dikirim'); await fetchOrder()
         setShowRevisiConfirm(false)
     }

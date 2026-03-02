@@ -84,6 +84,18 @@ export default function BuatOrder() {
     const handleSubmit = async () => {
         setLoading(true)
         try {
+            // Claim promo atomically first (prevents race condition)
+            let claimedPromo = promoData
+            if (promoData) {
+                const { data: claimed, error: promoErr } = await supabase.rpc('claim_promo', { p_kode: promoData.kode })
+                if (promoErr) {
+                    toast.error('Promo gagal diklaim: ' + promoErr.message)
+                    setLoading(false)
+                    return
+                }
+                claimedPromo = claimed?.[0] || promoData
+            }
+
             const { data, error: insertErr } = await supabase.from('orders').insert({
                 layanan_id: layanan.id,
                 client_id: user.id,
@@ -92,16 +104,11 @@ export default function BuatOrder() {
                 status_pembayaran: 'Belum Bayar',
                 status_pekerjaan: 'Menunggu Diproses',
                 tenggat_waktu: deadline || null,
-                kode_promo: promoData?.kode || null,
+                kode_promo: claimedPromo?.kode || null,
                 diskon: diskon,
             }).select().single()
 
             if (insertErr) throw insertErr
-
-            // Increment promo usage
-            if (promoData) {
-                await supabase.from('promos').update({ terpakai: promoData.terpakai + 1 }).eq('id', promoData.id)
-            }
 
             toast.success('Pesanan berhasil dibuat!')
             navigate(`/order/${data.id}`)

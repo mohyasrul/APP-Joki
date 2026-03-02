@@ -53,12 +53,19 @@ export default function AdminRequests() {
     }, [])
 
     const fetchRequests = async () => {
-        const { data } = await supabase
-            .from('custom_requests')
-            .select('*, profiles(full_name, phone)')
-            .order('created_at', { ascending: false })
-        setRequests(data || [])
-        setLoading(false)
+        try {
+            const { data, error } = await supabase
+                .from('custom_requests')
+                .select('*, profiles(full_name, phone)')
+                .order('created_at', { ascending: false })
+            if (error) throw error
+            setRequests(data || [])
+        } catch (err) {
+            console.error('Failed to fetch requests:', err)
+            toast.error('Gagal memuat data request')
+        } finally {
+            setLoading(false)
+        }
     }
 
     const handleAccept = async () => {

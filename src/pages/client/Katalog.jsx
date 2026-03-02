@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { formatRupiah } from '../../lib/utils'
-import { ShoppingBag, Search, BookOpen, ArrowRight, Tag, Filter } from 'lucide-react'
+import { ShoppingBag, Search, BookOpen, ArrowRight, Tag, Filter, AlertCircle, RefreshCw } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 export default function Katalog() {
@@ -11,20 +11,34 @@ export default function Katalog() {
     const [kategori, setKategori] = useState('Semua')
     const [kategoriList, setKategoriList] = useState([])
     const [loading, setLoading] = useState(true)
+    const [fetchError, setFetchError] = useState(null)
     const [currentPage, setCurrentPage] = useState(1)
     const navigate = useNavigate()
 
     useEffect(() => { fetchLayanan(); fetchKategori() }, [])
 
     const fetchLayanan = async () => {
-        const { data } = await supabase.from('layanan').select('*').eq('tersedia', true).order('created_at', { ascending: false })
-        setLayanan(data || [])
-        setLoading(false)
+        try {
+            setFetchError(null)
+            const { data, error } = await supabase.from('layanan').select('*').eq('tersedia', true).order('created_at', { ascending: false })
+            if (error) throw error
+            setLayanan(data || [])
+        } catch (err) {
+            console.error('Failed to fetch layanan:', err)
+            setFetchError('Gagal memuat katalog. Silakan coba lagi.')
+        } finally {
+            setLoading(false)
+        }
     }
 
     const fetchKategori = async () => {
-        const { data } = await supabase.from('kategori').select('nama').order('urutan', { ascending: true })
-        setKategoriList(['Semua', ...(data || []).map(k => k.nama)])
+        try {
+            const { data, error } = await supabase.from('kategori').select('nama').order('urutan', { ascending: true })
+            if (error) throw error
+            setKategoriList(['Semua', ...(data || []).map(k => k.nama)])
+        } catch (err) {
+            console.error('Failed to fetch kategori:', err)
+        }
     }
 
     const filtered = layanan.filter(l => {
@@ -74,6 +88,15 @@ export default function Katalog() {
                             <div className="h-4 bg-white/5 rounded w-2/3" />
                         </div>
                     ))}
+                </div>
+            ) : fetchError ? (
+                <div className="glass rounded-2xl p-12 text-center">
+                    <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-slate-300 mb-2">{fetchError}</h3>
+                    <button onClick={() => { setLoading(true); fetchLayanan(); fetchKategori() }}
+                        className="mt-2 px-5 py-2.5 rounded-xl bg-primary/20 text-primary-light font-medium text-sm hover:bg-primary/30 transition-all inline-flex items-center gap-2">
+                        <RefreshCw className="w-4 h-4" /> Coba Lagi
+                    </button>
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="glass rounded-2xl p-12 text-center">

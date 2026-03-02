@@ -17,23 +17,30 @@ export function NotificationProvider({ children }) {
   const fetchNotifications = useCallback(async () => {
     if (!user) return
     setLoading(true)
-    const { data } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(50)
-    setNotifications(data || [])
-    setUnreadCount((data || []).filter((n) => !n.is_read).length)
-    setLoading(false)
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50)
+      if (error) throw error
+      setNotifications(data || [])
+      setUnreadCount((data || []).filter((n) => !n.is_read).length)
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err)
+    } finally {
+      setLoading(false)
+    }
   }, [user])
 
   // Mark single notification as read
   const markAsRead = useCallback(async (notificationId) => {
-    await supabase
+    const { error } = await supabase
       .from('notifications')
       .update({ is_read: true })
       .eq('id', notificationId)
+    if (error) { console.error('Failed to mark notification as read:', error); return }
     setNotifications((prev) =>
       prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
     )
@@ -43,11 +50,12 @@ export function NotificationProvider({ children }) {
   // Mark all as read
   const markAllAsRead = useCallback(async () => {
     if (!user) return
-    await supabase
+    const { error } = await supabase
       .from('notifications')
       .update({ is_read: true })
       .eq('user_id', user.id)
       .eq('is_read', false)
+    if (error) { console.error('Failed to mark all as read:', error); return }
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
     setUnreadCount(0)
   }, [user])

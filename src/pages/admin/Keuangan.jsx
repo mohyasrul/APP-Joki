@@ -14,13 +14,20 @@ export default function Keuangan() {
     useEffect(() => { fetchOrders() }, [])
 
     const fetchOrders = async () => {
-        const { data } = await supabase
-            .from('orders')
-            .select('*, layanan(judul_tugas), profiles(full_name)')
-            .eq('status_pembayaran', 'Lunas')
-            .order('created_at', { ascending: false })
-        setOrders(data || [])
-        setLoading(false)
+        try {
+            const { data, error } = await supabase
+                .from('orders')
+                .select('*, layanan(judul_tugas), profiles(full_name)')
+                .eq('status_pembayaran', 'Lunas')
+                .order('created_at', { ascending: false })
+            if (error) throw error
+            setOrders(data || [])
+        } catch (err) {
+            console.error('Failed to fetch keuangan:', err)
+            toast.error('Gagal memuat data keuangan')
+        } finally {
+            setLoading(false)
+        }
     }
 
     const now = new Date()
