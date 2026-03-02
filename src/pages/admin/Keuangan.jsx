@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { formatRupiah } from '../../lib/utils'
 import { useToast } from '../../components/Toast'
 import { DollarSign, TrendingUp, Calendar, Download, Loader2 } from 'lucide-react'
 
@@ -19,8 +20,6 @@ export default function Keuangan() {
         setOrders(data || [])
         setLoading(false)
     }
-
-    const formatRupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
     const now = new Date()
     const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay())

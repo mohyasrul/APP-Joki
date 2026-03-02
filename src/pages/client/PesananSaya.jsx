@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
+import { formatRupiah } from '../../lib/utils'
 import { ShoppingCart, CheckCircle, XCircle, Eye, Package, Clock, Inbox, Star } from 'lucide-react'
 
 const STATUS_COLORS = {
@@ -81,7 +82,6 @@ export default function PesananSaya() {
 
     const filters = ['Semua', 'Menunggu Diproses', 'Sedang Dikerjakan', 'Selesai']
     const filtered = filter === 'Semua' ? orders : orders.filter(o => o.status_pekerjaan === filter)
-    const formatRupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
     return (
         <div className="fade-in">

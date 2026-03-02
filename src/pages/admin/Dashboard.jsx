@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { formatRupiah } from '../../lib/utils'
 import {
     LayoutDashboard, DollarSign, Clock, AlertTriangle,
     TrendingUp, ArrowRight, CheckCircle, Package
@@ -39,8 +40,6 @@ export default function AdminDashboard() {
         }
         setLoading(false)
     }
-
-    const formatRupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
     const statCards = [
         { label: 'Total Pemasukan', value: formatRupiah(stats.totalIncome), icon: DollarSign, gradient: 'from-green-500/20 to-emerald-500/20', iconColor: 'text-green-400' },

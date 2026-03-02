@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useToast } from '../../components/Toast'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { Tag, Plus, Edit3, ToggleLeft, ToggleRight, Save, X, Loader2, Trash2, Percent, DollarSign } from 'lucide-react'
 
 export default function AdminPromo() {
@@ -12,6 +13,8 @@ export default function AdminPromo() {
     const [saving, setSaving] = useState(false)
     const [deleteTarget, setDeleteTarget] = useState(null)
     const toast = useToast()
+
+    useBodyScrollLock(showModal || !!deleteTarget)
 
     useEffect(() => { fetchPromos() }, [])
 

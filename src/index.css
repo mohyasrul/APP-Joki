@@ -15,14 +15,31 @@
   --color-info: #3b82f6;
 }
 
+html {
+  scroll-behavior: smooth;
+  overscroll-behavior-y: contain;
+}
+
 body {
   font-family: var(--font-sans);
   background: linear-gradient(135deg, #0f0a2e 0%, #1a1145 40%, #0f172a 100%);
   color: #e2e8f0;
   min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Custom scrollbar */
+/* Ensure inputs don't trigger iOS zoom (min 16px) */
+input, select, textarea {
+  font-size: 16px;
+}
+@media (min-width: 768px) {
+  input, select, textarea {
+    font-size: inherit;
+  }
+}
+
+/* Custom scrollbar — WebKit */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -40,16 +57,48 @@ body {
   background: rgba(99, 102, 241, 0.5);
 }
 
-/* Glass card effect */
+/* Custom scrollbar — Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+}
+
+/* Glass card effect — desktop: full blur, mobile: solid bg for performance */
 .glass {
   background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.glass-hover:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(99, 102, 241, 0.3);
+@media (min-width: 768px) {
+  .glass {
+    backdrop-filter: blur(12px);
+  }
+}
+
+@media (max-width: 767px) {
+  .glass {
+    background: rgba(15, 23, 42, 0.85);
+  }
+}
+
+/* Hover effects only on devices that support hover (not touch) */
+@media (hover: hover) {
+  .glass-hover:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+}
+
+/* Prevent sticky hover on touch devices */
+@media (hover: none) {
+  .glass-hover:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  /* Disable translate-y hover lift on mobile */
+  .hover\:-translate-y-1:hover {
+    transform: none !important;
+  }
 }
 
 /* Gradient text */
@@ -113,5 +162,15 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Safe area padding for PWA standalone mode */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
   }
 }

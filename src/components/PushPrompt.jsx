@@ -96,7 +96,7 @@ export default function PushPrompt() {
     if (!visible) return null
 
     return (
-        <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md slide-up">
+        <div className="fixed bottom-20 md:bottom-4 left-4 right-4 z-50 mx-auto max-w-md slide-up">
             <div className="glass rounded-2xl border border-primary/20 shadow-2xl shadow-primary/10 p-4">
                 <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">

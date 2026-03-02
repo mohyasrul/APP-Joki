@@ -2,15 +2,13 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
     LayoutDashboard, ShoppingBag, ClipboardList, DollarSign,
-    BookOpen, ShoppingCart, LogOut, Menu, X, Sparkles, Settings, Tag, User, Inbox
+    BookOpen, ShoppingCart, LogOut, Sparkles, Settings, Tag, User, Inbox
 } from 'lucide-react'
-import { useState } from 'react'
 import NotificationBell from './NotificationBell'
 
 export default function Navbar() {
     const { profile, signOut, isAdmin } = useAuth()
     const navigate = useNavigate()
-    const [menuOpen, setMenuOpen] = useState(false)
 
     const handleLogout = async () => {
         await signOut()
@@ -51,7 +49,7 @@ export default function Navbar() {
                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center shadow-lg shadow-primary/20">
                             <Sparkles className="w-5 h-5 text-white" />
                         </div>
-                        <span className="font-bold text-lg gradient-text hidden sm:block">JokiHub</span>
+                        <span className="font-bold text-lg gradient-text">JokiHub</span>
                     </div>
 
                     {/* Desktop Links */}
@@ -64,7 +62,7 @@ export default function Navbar() {
                         ))}
                     </div>
 
-                    {/* User Info */}
+                    {/* Desktop User Info */}
                     <div className="hidden md:flex items-center gap-3">
                         <NotificationBell />
                         <NavLink to={isAdmin ? '/admin' : '/profil'} className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-purple-500/30 flex items-center justify-center overflow-hidden border border-white/10 hover:border-primary/50 transition-all">
@@ -87,46 +85,26 @@ export default function Navbar() {
                         </button>
                     </div>
 
-                    {/* Mobile menu toggle */}
-                    <button
-                        className="md:hidden p-2 text-slate-400 hover:text-white"
-                        onClick={() => setMenuOpen(!menuOpen)}
-                    >
-                        {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                    </button>
+                    {/* Mobile: Notification + Avatar + Logout only (nav handled by BottomNav) */}
+                    <div className="flex md:hidden items-center gap-2">
+                        <NotificationBell />
+                        <NavLink to={isAdmin ? '/admin' : '/profil'} className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-purple-500/30 flex items-center justify-center overflow-hidden border border-white/10">
+                            {profile?.avatar_url ? (
+                                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                                <User className="w-4 h-4 text-slate-400" />
+                            )}
+                        </NavLink>
+                        <button
+                            onClick={handleLogout}
+                            className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                            title="Logout"
+                        >
+                            <LogOut className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
             </div>
-
-            {/* Mobile menu */}
-            {menuOpen && (
-                <div className="md:hidden glass border-t border-white/5 p-4 space-y-1 fade-in">
-                    <div className="flex items-center justify-between px-4 py-2">
-                        <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">Notifikasi</span>
-                        <NotificationBell />
-                    </div>
-                    <hr className="border-white/10 my-1" />
-                    {links.map(link => (
-                        <NavLink
-                            key={link.to}
-                            to={link.to}
-                            end
-                            className={linkClass}
-                            onClick={() => setMenuOpen(false)}
-                        >
-                            <link.icon className="w-4 h-4" />
-                            {link.label}
-                        </NavLink>
-                    ))}
-                    <hr className="border-white/10 my-2" />
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 w-full transition-all"
-                    >
-                        <LogOut className="w-4 h-4" />
-                        Logout
-                    </button>
-                </div>
-            )}
         </nav>
     )
 }

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useToast } from '../../components/Toast'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import { formatRupiah } from '../../lib/utils'
 import {
     ClipboardList, Search, CheckCircle, XCircle, X, Image as ImageIcon,
     Loader2, AlertTriangle, Upload, Star, FileText, Download, ExternalLink, Eye
@@ -49,6 +51,8 @@ export default function AdminOrders() {
     // View hasil modal
     const [viewHasil, setViewHasil] = useState(null)
 
+    useBodyScrollLock(!!showBukti || !!uploadModal || !!viewHasil)
+
     useEffect(() => {
         fetchOrders()
         const channel = supabase
@@ -70,8 +74,6 @@ export default function AdminOrders() {
         setOrders(data || [])
         setLoading(false)
     }
-
-    const formatRupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
     const handleVerifikasi = async (orderId, accept) => {
         await supabase.from('orders').update({ status_pembayaran: accept ? 'Lunas' : 'Belum Bayar', ...(accept ? {} : { bukti_transfer_url: null }) }).eq('id', orderId)

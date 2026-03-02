@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useToast } from '../../components/Toast'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import { formatRupiah } from '../../lib/utils'
 import { BookOpen, Plus, Edit3, ToggleLeft, ToggleRight, Save, X, Loader2, Trash2 } from 'lucide-react'
 
 export default function KelolaLayanan() {
@@ -14,6 +16,8 @@ export default function KelolaLayanan() {
     const [kategoriOptions, setKategoriOptions] = useState([])
     const toast = useToast()
 
+    useBodyScrollLock(showModal || !!deleteTarget)
+
     useEffect(() => { fetchLayanan(); fetchKategori() }, [])
 
     const fetchLayanan = async () => {
@@ -26,8 +30,6 @@ export default function KelolaLayanan() {
         const { data } = await supabase.from('kategori').select('nama').order('urutan', { ascending: true })
         setKategoriOptions((data || []).map(k => k.nama))
     }
-
-    const formatRupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
     const openModal = (item = null) => {
         if (item) {

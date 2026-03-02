@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useToast } from '../../components/Toast'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import { formatRupiah } from '../../lib/utils'
 import { Inbox, CheckCircle, XCircle, X, Loader2, Clock, DollarSign, Calendar, FileText, User } from 'lucide-react'
 
 const STATUS_COLORS = {
@@ -14,6 +16,9 @@ export default function AdminRequests() {
     const [requests, setRequests] = useState([])
     const [loading, setLoading] = useState(true)
     const [processModal, setProcessModal] = useState(null)
+
+    useBodyScrollLock(!!processModal)
+
     const [harga, setHarga] = useState('')
     const [catatan, setCatatan] = useState('')
     const [processing, setProcessing] = useState(false)
@@ -94,8 +99,6 @@ export default function AdminRequests() {
         toast.success('Request ditolak')
         fetchRequests()
     }
-
-    const formatRupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
     const pendingCount = requests.filter(r => r.status === 'pending').length
 

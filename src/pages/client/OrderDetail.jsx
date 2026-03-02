@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import { formatRupiah } from '../../lib/utils'
 import {
     ArrowLeft, Upload, CheckCircle, Clock, FileCheck, AlertCircle,
     ImageIcon, XCircle, Loader2, Ban, Download, Star, RotateCcw, Tag, FileText, HelpCircle, X
@@ -54,6 +56,9 @@ export default function OrderDetail() {
 
     // Payment instruction popup
     const [showPaymentGuide, setShowPaymentGuide] = useState(false)
+
+    // Lock body scroll when any modal is open
+    useBodyScrollLock(showUploadConfirm || showPaymentGuide || showCancelConfirm || showRating || showRevisiConfirm)
 
     useEffect(() => {
         fetchOrder(); fetchPaymentInfo()
@@ -153,8 +158,6 @@ export default function OrderDetail() {
         toast.success('Request revisi dikirim'); await fetchOrder()
         setShowRevisiConfirm(false)
     }
-
-    const formatRupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
     if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
     if (!order) return <div className="glass rounded-2xl p-12 text-center"><AlertCircle className="w-12 h-12 text-warning mx-auto mb-4" /><h3 className="text-lg font-medium text-white">Order tidak ditemukan</h3></div>

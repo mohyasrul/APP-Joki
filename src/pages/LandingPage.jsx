@@ -18,8 +18,8 @@ export default function LandingPage() {
             <div className="relative overflow-hidden">
                 {/* Background effects */}
                 <div className="absolute inset-0">
-                    <div className="absolute top-20 left-1/4 w-72 h-72 bg-primary/20 rounded-full blur-3xl" />
-                    <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+                    <div className="hidden md:block absolute top-20 left-1/4 w-72 h-72 bg-primary/20 rounded-full blur-3xl" />
+                    <div className="hidden md:block absolute bottom-20 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
                 </div>
 
                 <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-32 text-center">
@@ -77,7 +77,7 @@ export default function LandingPage() {
                     {features.map((feature, i) => (
                         <div
                             key={i}
-                            className="glass glass-hover rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1"
+                            className="glass glass-hover rounded-2xl p-6 transition-all duration-300 md:hover:-translate-y-1"
                             style={{ animationDelay: `${i * 100}ms` }}
                         >
                             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center mb-4">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { formatRupiah } from '../../lib/utils'
 import { ShoppingBag, Search, BookOpen, ArrowRight, Tag, Filter } from 'lucide-react'
 
 export default function Katalog() {
@@ -29,8 +30,6 @@ export default function Katalog() {
         const matchKategori = kategori === 'Semua' || (l.kategori || 'Lainnya') === kategori
         return matchSearch && matchKategori
     })
-
-    const formatRupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
     return (
         <div className="fade-in">

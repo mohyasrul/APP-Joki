@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import { formatRupiah } from '../../lib/utils'
 import { ShoppingCart, ArrowLeft, Calendar, FileText, AlertCircle, CheckCircle, Eye, Tag, X } from 'lucide-react'
 
 export default function BuatOrder() {
@@ -16,6 +18,8 @@ export default function BuatOrder() {
     const [deadline, setDeadline] = useState('')
     const [loading, setLoading] = useState(false)
     const [showConfirm, setShowConfirm] = useState(false)
+
+    useBodyScrollLock(showConfirm)
 
     // Promo
     const [promoCode, setPromoCode] = useState('')
@@ -32,8 +36,6 @@ export default function BuatOrder() {
             </div>
         )
     }
-
-    const formatRupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
     const applyPromo = async () => {
         if (!promoCode.trim()) return
