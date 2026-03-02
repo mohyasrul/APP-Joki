@@ -5,6 +5,7 @@
 
 -- 1) Atomic promo claiming (prevents race condition)
 -- Usage: SELECT * FROM claim_promo('KODE123')
+DROP FUNCTION IF EXISTS claim_promo(TEXT);
 CREATE OR REPLACE FUNCTION claim_promo(p_kode TEXT)
 RETURNS TABLE(
   out_id UUID,
