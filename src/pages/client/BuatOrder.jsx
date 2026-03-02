@@ -91,7 +91,19 @@ export default function BuatOrder() {
                     setLoading(false)
                     return
                 }
-                claimedPromo = claimed?.[0] || promoData
+                // Map out_ prefixed columns back to normal names
+                const row = claimed?.[0]
+                if (row) {
+                    claimedPromo = {
+                        id: row.out_id,
+                        kode: row.out_kode,
+                        tipe: row.out_tipe,
+                        nilai: row.out_nilai,
+                        kuota: row.out_kuota,
+                        terpakai: row.out_terpakai,
+                        aktif: row.out_aktif,
+                    }
+                }
             }
 
             const { data, error: insertErr } = await supabase.from('orders').insert({

@@ -7,13 +7,13 @@
 -- Usage: SELECT * FROM claim_promo('KODE123')
 CREATE OR REPLACE FUNCTION claim_promo(p_kode TEXT)
 RETURNS TABLE(
-  id UUID,
-  kode TEXT,
-  tipe TEXT,
-  nilai NUMERIC,
-  kuota INT,
-  terpakai INT,
-  aktif BOOLEAN
+  out_id UUID,
+  out_kode TEXT,
+  out_tipe TEXT,
+  out_nilai NUMERIC,
+  out_kuota INT,
+  out_terpakai INT,
+  out_aktif BOOLEAN
 ) LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   promo_row promos%ROWTYPE;
@@ -33,16 +33,16 @@ BEGIN
   END IF;
 
   -- Increment usage atomically
-  UPDATE promos SET terpakai = terpakai + 1 WHERE promos.id = promo_row.id;
+  UPDATE promos SET terpakai = promos.terpakai + 1 WHERE promos.id = promo_row.id;
 
-  RETURN QUERY SELECT
-    promo_row.id,
-    promo_row.kode,
-    promo_row.tipe,
-    promo_row.nilai,
-    promo_row.kuota,
-    promo_row.terpakai + 1,
-    promo_row.aktif;
+  out_id := promo_row.id;
+  out_kode := promo_row.kode;
+  out_tipe := promo_row.tipe;
+  out_nilai := promo_row.nilai;
+  out_kuota := promo_row.kuota;
+  out_terpakai := promo_row.terpakai + 1;
+  out_aktif := promo_row.aktif;
+  RETURN NEXT;
 END;
 $$;
 
