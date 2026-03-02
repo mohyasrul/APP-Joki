@@ -45,22 +45,25 @@ STATUS LEGEND:
           File: AuthContext.jsx, Register.jsx
           DONE: commit e1825fd — emailRedirectTo + confirmation screen
 
-  [ ] #6  Keuangan fetch semua orders client-side
+  [x] #6  Keuangan fetch semua orders client-side
           Tidak ada server-side aggregation atau date filter. Bottleneck
           saat data banyak.
           Solusi: buat RPC get_keuangan_stats(p_year INT).
-          File: Keuangan.jsx, upgrade-functions.sql (baru)
+          File: Keuangan.jsx, upgrade-v6.sql
+          DONE: commit 6c48286 — get_keuangan_summary() RPC + paginated transactions
 
-  [ ] #7  AdminOrders search download semua data
+  [x] #7  AdminOrders search download semua data
           Search dengan join fetches all rows lalu filter client-side.
           Solusi: gunakan Supabase textSearch atau RPC dengan ILIKE.
-          File: AdminOrders.jsx
+          File: AdminOrders.jsx, upgrade-v6.sql
+          DONE: commit 6c48286 — search_orders() RPC with server-side ILIKE
 
-  [ ] #8  Tidak ada notifikasi ke admin saat bukti transfer diupload
+  [x] #8  Tidak ada notifikasi ke admin saat bukti transfer diupload
           Admin hanya dapat push notification untuk order baru dan custom
           request, tapi TIDAK untuk "bukti bayar uploaded — perlu verifikasi".
           Solusi: tambah DB trigger.
-          File: upgrade-v5.sql (baru trigger)
+          File: upgrade-v6.sql
+          DONE: commit 6c48286 — notify_admins_payment_uploaded() trigger
 
 ================================================================================
   P2 — MEDIUM (Penting untuk UX & kualitas)
