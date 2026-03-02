@@ -66,8 +66,27 @@ self.addEventListener('notificationclick', (event) => {
 })
 
 // ==========================================
-// Activate — claim clients immediately
+// Activate — claim clients + re-validate push subscription
 // ==========================================
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim())
+  event.waitUntil(
+    self.clients.claim().then(async () => {
+      // After SW update, check if push subscription is still alive
+      // If not, notify all clients to re-subscribe
+      try {
+        const subscription = await self.registration.pushManager.getSubscription()
+        if (!subscription) {
+          console.log('[SW] Push subscription lost after update, notifying clients...')
+          const clients = await self.clients.matchAll({ type: 'window' })
+          for (const client of clients) {
+            client.postMessage({ type: 'PUSH_SUBSCRIPTION_LOST' })
+          }
+        } else {
+          console.log('[SW] Push subscription still valid after update')
+        }
+      } catch (err) {
+        console.error('[SW] Error checking push subscription on activate:', err)
+      }
+    })
+  )
 })

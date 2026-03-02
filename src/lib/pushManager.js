@@ -156,3 +156,63 @@ export async function checkSubscription() {
     return false
   }
 }
+
+/**
+ * Ensure push subscription is active and synced to database.
+ * Call this on every app load for logged-in users to handle:
+ * - Service worker updates that invalidate subscriptions
+ * - Database rows that were cleaned up (410/expired)
+ * - Browser subscription still alive but missing from DB
+ * 
+ * Returns true if subscription is valid, false otherwise.
+ * Does NOT prompt for permission — only works if already granted.
+ */
+export async function ensureSubscription(userId) {
+  if (!isPushSupported()) return false
+  if (!VAPID_PUBLIC_KEY) return false
+  if (Notification.permission !== 'granted') return false
+
+  try {
+    const registration = await navigator.serviceWorker.ready
+    let subscription = await registration.pushManager.getSubscription()
+
+    if (!subscription) {
+      // Browser subscription was invalidated (e.g. after SW update)
+      // Re-subscribe silently since permission is already granted
+      console.log('[Push] No browser subscription found, re-subscribing...')
+      try {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        })
+        console.log('[Push] Re-subscribed successfully:', subscription.endpoint)
+      } catch (err) {
+        console.error('[Push] Re-subscribe failed:', err)
+        return false
+      }
+    }
+
+    // Always upsert to DB to ensure it's synced
+    const subscriptionJSON = subscription.toJSON()
+    const { error } = await supabase.from('push_subscriptions').upsert(
+      {
+        user_id: userId,
+        endpoint: subscriptionJSON.endpoint,
+        p256dh: subscriptionJSON.keys.p256dh,
+        auth: subscriptionJSON.keys.auth,
+      },
+      { onConflict: 'user_id,endpoint' }
+    )
+
+    if (error) {
+      console.error('[Push] ensureSubscription upsert failed:', error)
+      return false
+    }
+
+    console.log('[Push] ✅ Subscription synced to DB')
+    return true
+  } catch (err) {
+    console.error('[Push] ensureSubscription error:', err)
+    return false
+  }
+}

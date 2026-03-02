@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Bell, X } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
-import { isPushSupported, checkSubscription, subscribeToPush, getPermissionStatus } from '../lib/pushManager'
+import { isPushSupported, checkSubscription, subscribeToPush, getPermissionStatus, ensureSubscription } from '../lib/pushManager'
 
 const STORAGE_KEY_SUBSCRIBED = 'push-subscribed'
 const STORAGE_KEY_DISMISSED = 'push-prompt-dismissed'
@@ -30,7 +30,23 @@ export default function PushPrompt() {
             return
         }
 
-        // Don't show if already subscribed successfully
+        // If permission already granted, silently ensure subscription is synced
+        // This handles SW updates that invalidate subscriptions
+        if (getPermissionStatus() === 'granted') {
+            ensureSubscription(user.id).then((ok) => {
+                if (ok) {
+                    console.log('[PushPrompt] Subscription verified/restored via ensureSubscription')
+                    localStorage.setItem(STORAGE_KEY_SUBSCRIBED, user.id)
+                } else {
+                    // ensureSubscription failed — clear cached state so prompt can show
+                    console.warn('[PushPrompt] ensureSubscription failed, clearing cached state')
+                    localStorage.removeItem(STORAGE_KEY_SUBSCRIBED)
+                }
+            })
+            return // don't show prompt — permission already granted
+        }
+
+        // Don't show if already subscribed successfully (and permission not yet granted is impossible here)
         if (localStorage.getItem(STORAGE_KEY_SUBSCRIBED) === user.id) return
 
         // Don't show if user dismissed (persists across sessions)
