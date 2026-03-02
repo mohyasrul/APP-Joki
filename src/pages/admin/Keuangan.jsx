@@ -3,10 +3,12 @@ import { supabase } from '../../lib/supabase'
 import { formatRupiah } from '../../lib/utils'
 import { useToast } from '../../components/Toast'
 import { DollarSign, TrendingUp, Calendar, Download, Loader2 } from 'lucide-react'
+import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 export default function Keuangan() {
     const [orders, setOrders] = useState([])
     const [loading, setLoading] = useState(true)
+    const [currentPage, setCurrentPage] = useState(1)
     const toast = useToast()
 
     useEffect(() => { fetchOrders() }, [])
@@ -126,7 +128,7 @@ export default function Keuangan() {
                     <p className="text-slate-500 text-center py-8">Belum ada transaksi selesai</p>
                 ) : (
                     <div className="space-y-3">
-                        {orders.map(o => (
+                        {orders.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE).map(o => (
                             <div key={o.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5">
                                 <div>
                                     <p className="text-sm font-medium text-white">{o.layanan?.judul_tugas}</p>
@@ -142,6 +144,9 @@ export default function Keuangan() {
                             </div>
                         ))}
                     </div>
+                )}
+                {orders.length > ITEMS_PER_PAGE && (
+                    <Pagination currentPage={currentPage} totalItems={orders.length} onPageChange={setCurrentPage} />
                 )}
             </div>
         </div>

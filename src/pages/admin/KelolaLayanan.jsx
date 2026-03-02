@@ -4,6 +4,7 @@ import { useToast } from '../../components/Toast'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { formatRupiah } from '../../lib/utils'
 import { BookOpen, Plus, Edit3, ToggleLeft, ToggleRight, Save, X, Loader2, Trash2 } from 'lucide-react'
+import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 export default function KelolaLayanan() {
     const [layanan, setLayanan] = useState([])
@@ -14,6 +15,7 @@ export default function KelolaLayanan() {
     const [saving, setSaving] = useState(false)
     const [deleteTarget, setDeleteTarget] = useState(null)
     const [kategoriOptions, setKategoriOptions] = useState([])
+    const [currentPage, setCurrentPage] = useState(1)
     const toast = useToast()
 
     useBodyScrollLock(showModal || !!deleteTarget)
@@ -100,7 +102,7 @@ export default function KelolaLayanan() {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {layanan.map(item => (
+                    {layanan.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE).map(item => (
                         <div key={item.id} className="glass rounded-2xl p-5 flex items-center justify-between gap-4 transition-all hover:bg-white/[0.03]">
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
@@ -123,6 +125,10 @@ export default function KelolaLayanan() {
                         </div>
                     ))}
                 </div>
+            )}
+
+            {layanan.length > ITEMS_PER_PAGE && (
+                <Pagination currentPage={currentPage} totalItems={layanan.length} onPageChange={setCurrentPage} />
             )}
 
             {showModal && (

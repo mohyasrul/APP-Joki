@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { formatRupiah } from '../../lib/utils'
 import { ShoppingBag, Search, BookOpen, ArrowRight, Tag, Filter } from 'lucide-react'
+import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 export default function Katalog() {
     const [layanan, setLayanan] = useState([])
@@ -10,6 +11,7 @@ export default function Katalog() {
     const [kategori, setKategori] = useState('Semua')
     const [kategoriList, setKategoriList] = useState([])
     const [loading, setLoading] = useState(true)
+    const [currentPage, setCurrentPage] = useState(1)
     const navigate = useNavigate()
 
     useEffect(() => { fetchLayanan(); fetchKategori() }, [])
@@ -30,6 +32,10 @@ export default function Katalog() {
         const matchKategori = kategori === 'Semua' || (l.kategori || 'Lainnya') === kategori
         return matchSearch && matchKategori
     })
+    const paginatedLayanan = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
+    // Reset page when filter/search changes
+    useEffect(() => { setCurrentPage(1) }, [search, kategori])
 
     return (
         <div className="fade-in">
@@ -77,7 +83,7 @@ export default function Katalog() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filtered.map((item, idx) => (
+                    {paginatedLayanan.map((item, idx) => (
                         <div key={item.id} className="glass glass-hover rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 group" style={{ animationDelay: `${idx * 50}ms` }}>
                             <div className="flex items-start justify-between mb-3">
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center shrink-0">
@@ -99,6 +105,10 @@ export default function Katalog() {
                         </div>
                     ))}
                 </div>
+            )}
+
+            {filtered.length > ITEMS_PER_PAGE && (
+                <Pagination currentPage={currentPage} totalItems={filtered.length} onPageChange={setCurrentPage} />
             )}
         </div>
     )

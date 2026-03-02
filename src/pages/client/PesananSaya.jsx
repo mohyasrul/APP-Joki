@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
 import { formatRupiah } from '../../lib/utils'
 import { ShoppingCart, CheckCircle, XCircle, Eye, Package, Clock, Inbox, Star } from 'lucide-react'
+import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 const STATUS_COLORS = {
     'Menunggu Diproses': 'text-yellow-400 bg-yellow-500/10',
@@ -28,6 +29,8 @@ export default function PesananSaya() {
     const [requests, setRequests] = useState([])
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState('Semua')
+    const [currentPage, setCurrentPage] = useState(1)
+    const [reqPage, setReqPage] = useState(1)
     const { user } = useAuth()
     const navigate = useNavigate()
     const toast = useToast()
@@ -82,6 +85,11 @@ export default function PesananSaya() {
 
     const filters = ['Semua', 'Menunggu Diproses', 'Sedang Dikerjakan', 'Selesai']
     const filtered = filter === 'Semua' ? orders : orders.filter(o => o.status_pekerjaan === filter)
+    const paginatedOrders = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+    const paginatedRequests = requests.slice((reqPage - 1) * ITEMS_PER_PAGE, reqPage * ITEMS_PER_PAGE)
+
+    // Reset page when filter changes
+    useEffect(() => { setCurrentPage(1) }, [filter])
 
     return (
         <div className="fade-in">
@@ -101,7 +109,7 @@ export default function PesananSaya() {
                         <Inbox className="w-4 h-4" /> Custom Request ({requests.length})
                     </h2>
                     <div className="space-y-2">
-                        {requests.map(req => {
+                        {paginatedRequests.map(req => {
                             const s = REQ_STATUS[req.status]
                             const ReqIcon = s.icon
                             return (
@@ -125,6 +133,9 @@ export default function PesananSaya() {
                             )
                         })}
                     </div>
+                    {requests.length > ITEMS_PER_PAGE && (
+                        <Pagination currentPage={reqPage} totalItems={requests.length} onPageChange={setReqPage} />
+                    )}
                 </div>
             )}
 
@@ -148,7 +159,7 @@ export default function PesananSaya() {
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {filtered.map(order => (
+                    {paginatedOrders.map(order => (
                         <div key={order.id} onClick={() => navigate(`/order/${order.id}`)}
                             className="glass glass-hover rounded-2xl p-5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 group">
                             <div className="flex items-start justify-between mb-3">
@@ -169,6 +180,10 @@ export default function PesananSaya() {
                         </div>
                     ))}
                 </div>
+            )}
+
+            {filtered.length > ITEMS_PER_PAGE && (
+                <Pagination currentPage={currentPage} totalItems={filtered.length} onPageChange={setCurrentPage} />
             )}
         </div>
     )

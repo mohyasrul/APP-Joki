@@ -7,6 +7,7 @@ import {
     ClipboardList, Search, CheckCircle, XCircle, X, Image as ImageIcon,
     Loader2, AlertTriangle, Upload, Star, FileText, Download, ExternalLink, Eye
 } from 'lucide-react'
+import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 const STATUS_PEKERJAAN = ['Menunggu Diproses', 'Sedang Dikerjakan', 'Selesai', 'Batal']
 const STATUS_COLORS = {
@@ -39,6 +40,7 @@ export default function AdminOrders() {
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState('Semua')
     const [search, setSearch] = useState('')
+    const [currentPage, setCurrentPage] = useState(1)
     const [showBukti, setShowBukti] = useState(null)
     const toast = useToast()
 
@@ -145,6 +147,10 @@ export default function AdminOrders() {
         (o.layanan?.judul_tugas || '').toLowerCase().includes(search.toLowerCase()) ||
         (o.profiles?.full_name || '').toLowerCase().includes(search.toLowerCase())
     )
+    const paginatedOrders = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
+    // Reset page when filter/search changes
+    useEffect(() => { setCurrentPage(1) }, [filter, search])
 
     const formatSize = (bytes) => {
         if (bytes < 1024) return bytes + ' B'
@@ -194,7 +200,7 @@ export default function AdminOrders() {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {filtered.map(order => {
+                    {paginatedOrders.map(order => {
                         const hasHasil = (order.hasil_files?.length > 0) || order.hasil_url || order.catatan_hasil
                         return (
                             <div key={order.id} className={`glass rounded-2xl p-5 transition-all hover:bg-white/[0.03] ${isOverdue(order.tenggat_waktu) && !['Selesai', 'Batal'].includes(order.status_pekerjaan) ? 'border border-red-500/30' :
@@ -259,6 +265,10 @@ export default function AdminOrders() {
                         )
                     })}
                 </div>
+            )}
+
+            {filtered.length > ITEMS_PER_PAGE && (
+                <Pagination currentPage={currentPage} totalItems={filtered.length} onPageChange={setCurrentPage} />
             )}
 
             {/* Bukti Transfer Modal */}

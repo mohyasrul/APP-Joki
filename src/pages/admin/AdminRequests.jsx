@@ -4,6 +4,7 @@ import { useToast } from '../../components/Toast'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { formatRupiah } from '../../lib/utils'
 import { Inbox, CheckCircle, XCircle, X, Loader2, Clock, DollarSign, Calendar, FileText, User } from 'lucide-react'
+import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 const STATUS_COLORS = {
     pending: 'text-yellow-400 bg-yellow-500/10',
@@ -16,6 +17,7 @@ export default function AdminRequests() {
     const [requests, setRequests] = useState([])
     const [loading, setLoading] = useState(true)
     const [processModal, setProcessModal] = useState(null)
+    const [currentPage, setCurrentPage] = useState(1)
 
     useBodyScrollLock(!!processModal)
 
@@ -101,6 +103,7 @@ export default function AdminRequests() {
     }
 
     const pendingCount = requests.filter(r => r.status === 'pending').length
+    const paginatedRequests = requests.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
 
     return (
         <div className="fade-in">
@@ -124,7 +127,7 @@ export default function AdminRequests() {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {requests.map(req => (
+                    {paginatedRequests.map(req => (
                         <div key={req.id} className={`glass rounded-2xl p-5 transition-all hover:bg-white/[0.03] ${req.status === 'pending' ? 'border border-yellow-500/20' : ''}`}>
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div className="flex-1 min-w-0">
@@ -158,6 +161,10 @@ export default function AdminRequests() {
                         </div>
                     ))}
                 </div>
+            )}
+
+            {requests.length > ITEMS_PER_PAGE && (
+                <Pagination currentPage={currentPage} totalItems={requests.length} onPageChange={setCurrentPage} />
             )}
 
             {/* Accept Modal — Set Price */}

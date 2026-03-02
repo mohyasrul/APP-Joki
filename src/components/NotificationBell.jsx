@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, CheckCheck, Package, DollarSign, Inbox, ShoppingBag, X } from 'lucide-react'
 import { useNotifications } from '../contexts/NotificationContext'
+import { useAuth } from '../contexts/AuthContext'
 
 const TYPE_ICONS = {
   new_order: ShoppingBag,
@@ -30,9 +31,11 @@ function timeAgo(dateStr) {
 
 export default function NotificationBell() {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
+  const { profile } = useAuth()
   const [open, setOpen] = useState(false)
   const dropdownRef = useRef(null)
   const navigate = useNavigate()
+  const isAdmin = profile?.role === 'admin'
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -48,15 +51,41 @@ export default function NotificationBell() {
   const handleNotifClick = (notif) => {
     if (!notif.is_read) markAsRead(notif.id)
 
-    // Navigate based on type
     const data = notif.data || {}
-    if (data.order_id) {
-      navigate(`/order/${data.order_id}`)
-    } else if (notif.type === 'new_order' && data.order_id) {
-      navigate('/admin/orders')
-    } else if (notif.type === 'custom_request') {
-      navigate(data.order_id ? `/order/${data.order_id}` : '/pesanan-saya')
+    let target = '/'
+
+    if (isAdmin) {
+      // Admin routing
+      switch (notif.type) {
+        case 'new_order':
+          target = '/admin/orders'
+          break
+        case 'custom_request':
+          target = '/admin/requests'
+          break
+        case 'order_status':
+        case 'payment_update':
+          target = '/admin/orders'
+          break
+        default:
+          target = '/admin'
+      }
+    } else {
+      // Client routing
+      switch (notif.type) {
+        case 'order_status':
+        case 'payment_update':
+          target = data.order_id ? `/order/${data.order_id}` : '/pesanan-saya'
+          break
+        case 'custom_request':
+          target = data.order_id ? `/order/${data.order_id}` : '/pesanan-saya'
+          break
+        default:
+          target = '/pesanan-saya'
+      }
     }
+
+    navigate(target)
     setOpen(false)
   }
 

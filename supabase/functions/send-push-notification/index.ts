@@ -340,12 +340,19 @@ function getNotificationUrl(notification: { type: string; data: Record<string, u
   const data = notification.data || {}
   switch (notification.type) {
     case 'new_order':
+      // Admin receives this — go to orders management
       return '/admin/orders'
     case 'order_status':
     case 'payment_update':
+      // Client receives this — go to order detail
       return data.order_id ? `/order/${data.order_id}` : '/pesanan-saya'
     case 'custom_request':
-      return data.order_id ? `/order/${data.order_id}` : '/pesanan-saya'
+      // Could be admin (new request) or client (status update)
+      // If has order_id, it's a client notification (request accepted → order created)
+      // If has request_id only, it's an admin notification (new request incoming)
+      if (data.order_id) return `/order/${data.order_id}`
+      if (data.request_id && !data.order_id) return '/admin/requests'
+      return '/pesanan-saya'
     default:
       return '/'
   }
