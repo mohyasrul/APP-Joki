@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { ToastProvider } from './components/Toast'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import ErrorBoundary from './components/ErrorBoundary'
 import { lazy, Suspense } from 'react'
 import Layout from './components/Layout'
 
@@ -82,14 +83,16 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <NotificationProvider>
-          <ToastProvider>
-            <AppRoutes />
-          </ToastProvider>
-        </NotificationProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <NotificationProvider>
+            <ToastProvider>
+              <AppRoutes />
+            </ToastProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   )
 }

@@ -49,11 +49,20 @@ $$;
 
 -- 2) Dashboard statistics RPC (avoids fetching all orders client-side)
 -- Usage: SELECT * FROM get_dashboard_stats()
+-- SECURITY: Only admin can call this — clients get an error
+DROP FUNCTION IF EXISTS get_dashboard_stats();
 CREATE OR REPLACE FUNCTION get_dashboard_stats()
 RETURNS JSON LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   result JSON;
+  caller_role TEXT;
 BEGIN
+  -- Admin-only guard: prevent clients from seeing income/order data
+  SELECT role INTO caller_role FROM profiles WHERE id = auth.uid();
+  IF caller_role IS NULL OR caller_role != 'admin' THEN
+    RAISE EXCEPTION 'Unauthorized: admin access required';
+  END IF;
+
   SELECT json_build_object(
     'totalIncome', COALESCE((
       SELECT SUM(harga_final) FROM orders WHERE status_pembayaran = 'Lunas'

@@ -1,0 +1,230 @@
+================================================================================
+  JOKSKUY — IMPROVEMENT PLAN (Audit 2 Maret 2026)
+================================================================================
+
+STATUS LEGEND:
+  [ ] Belum dikerjakan
+  [x] Selesai
+  [-] Dibatalkan / Tidak jadi
+
+================================================================================
+  P0 — CRITICAL (Harus segera diperbaiki)
+================================================================================
+
+  [ ] #1  get_dashboard_stats() bocor ke client
+          Semua user (termasuk client) bisa panggil RPC ini dan lihat total
+          income + semua recent orders. 
+          Solusi: tambah admin role check di function body.
+          File: upgrade-functions.sql
+
+  [ ] #2  Tidak ada Error Boundary
+          Error React yang tidak ter-handle menyebabkan white screen.
+          Solusi: buat ErrorBoundary component + fallback UI + tombol retry.
+          File: App.jsx (baru: ErrorBoundary.jsx)
+
+================================================================================
+  P1 — HIGH (Sangat penting)
+================================================================================
+
+  [ ] #3  KelolaLayanan & AdminSettings pakai custom modal
+          Dua halaman ini masih buat modal <div> sendiri, bukan pakai
+          Modal.jsx yang sudah accessible (focus trap, Escape, aria-modal).
+          File: KelolaLayanan.jsx, AdminSettings.jsx
+
+  [ ] #4  Toast tidak diumumkan ke screen reader
+          Toast container tidak punya role="alert" atau aria-live="polite".
+          File: Toast.jsx
+
+  [ ] #5  Tidak ada email verification
+          Setelah register, user langsung masuk tanpa verifikasi email.
+          Solusi: tampilkan halaman "cek email", enforce email_confirmed_at.
+          File: AuthContext.jsx, Register.jsx
+
+  [ ] #6  Keuangan fetch semua orders client-side
+          Tidak ada server-side aggregation atau date filter. Bottleneck
+          saat data banyak.
+          Solusi: buat RPC get_keuangan_stats(p_year INT).
+          File: Keuangan.jsx, upgrade-functions.sql (baru)
+
+  [ ] #7  AdminOrders search download semua data
+          Search dengan join fetches all rows lalu filter client-side.
+          Solusi: gunakan Supabase textSearch atau RPC dengan ILIKE.
+          File: AdminOrders.jsx
+
+  [ ] #8  Tidak ada notifikasi ke admin saat bukti transfer diupload
+          Admin hanya dapat push notification untuk order baru dan custom
+          request, tapi TIDAK untuk "bukti bayar uploaded — perlu verifikasi".
+          Solusi: tambah DB trigger.
+          File: upgrade-v5.sql (baru trigger)
+
+================================================================================
+  P2 — MEDIUM (Penting untuk UX & kualitas)
+================================================================================
+
+  [ ] #9  Validasi phone number absent
+          Register menerima string apapun sebagai nomor HP.
+          Solusi: regex validate ^(08|+62)[0-9]{8,13}$.
+          File: Register.jsx
+
+  [ ] #10 Password show/hide toggle
+          Login & Register tidak ada tombol mata untuk lihat password.
+          File: Login.jsx, Register.jsx
+
+  [ ] #11 Toast overlap BottomNav
+          Toast container di bottom-4 right-4 tertutup BottomNav di mobile.
+          Solusi: bottom-20 saat ada BottomNav.
+          File: Toast.jsx
+
+  [ ] #12 OG Image masih vite.svg
+          Open Graph image generic, bukan branded.
+          File: index.html
+
+  [ ] #13 maximum-scale=1 blokir user zoom
+          Accessibility violation — user yang perlu zoom tidak bisa.
+          Solusi: hapus maximum-scale=1 dari viewport meta.
+          File: index.html
+
+  [ ] #14 Promo tidak ada tanggal expired
+          Tabel promos tidak punya valid_until/expired_at. Promo aktif
+          selamanya.
+          Solusi: tambah kolom + check di claim_promo().
+          File: upgrade-v2.sql (baru migration)
+
+  [ ] #15 Promo persen tanpa max cap
+          Promo 100% bisa bikin harga Rp 0 tanpa batas.
+          Solusi: tambah kolom max_potongan.
+          File: upgrade-v2.sql (baru migration)
+
+  [ ] #16 Duplikasi kode: formatSize, getFileIcon, STATUS_COLORS
+          Fungsi dan constants yang sama di 2-3 file berbeda.
+          Solusi: pindahkan ke src/lib/utils.js dan src/lib/constants.js.
+          File: OrderDetail.jsx, AdminOrders.jsx, PesananSaya.jsx, Dashboard.jsx
+
+  [ ] #17 Tidak ada fitur change password
+          Halaman Profile hanya edit nama, HP, avatar.
+          File: Profile.jsx
+
+  [ ] #18 NotificationBell dropdown tidak lock scroll
+          Di mobile, user bisa scroll page di belakang dropdown notifikasi.
+          File: NotificationBell.jsx
+
+  [ ] #19 Google Fonts blocking render
+          Font Inter loaded via blocking <link>.
+          Solusi: tambah font-display: swap atau <link rel="preload">.
+          File: index.html
+
+  [ ] #20 Tidak ada .env.example
+          Developer baru tidak tahu env var apa saja yang perlu diset.
+          File: (baru) .env.example
+
+  [ ] #21 Tidak ada offline fallback page
+          PWA offline menampilkan error browser generic.
+          File: sw.js, (baru) offline.html
+
+================================================================================
+  P3 — LOW (Nice to have / Polish)
+================================================================================
+
+  [ ] #22 Tidak ada CSP header
+          Tidak ada Content-Security-Policy di security headers Vercel.
+          File: vercel.json
+
+  [ ] #23 Rating tanpa CHECK constraint
+          orders.rating bisa diisi 0 atau 999.
+          Solusi: ALTER TABLE orders ADD CONSTRAINT rating_check
+          CHECK (rating >= 1 AND rating <= 5).
+
+  [ ] #24 Notification cleanup
+          Tabel notifications tumbuh tanpa batas.
+          Solusi: scheduled cleanup atau TTL (delete > 30 hari).
+
+  [ ] #25 Image loading="lazy" missing
+          Avatar dan bukti transfer image tidak lazy loaded.
+          File: Navbar.jsx, OrderDetail.jsx
+
+  [ ] #26 BottomNav missing aria-current="page"
+          Active tab hanya ditandai warna, tidak ada ARIA attribute.
+          File: BottomNav.jsx
+
+  [ ] #27 Loading spinner tanpa aria-label
+          Spinner loading tidak punya role="status" atau label.
+          File: App.jsx, ProtectedRoute.jsx
+
+  [ ] #28 Filter buttons tanpa aria-pressed
+          Tombol filter di Katalog dan PesananSaya tidak ada state ARIA.
+          File: Katalog.jsx, PesananSaya.jsx
+
+  [ ] #29 timeAgo di NotificationBell
+          Harusnya dipindahkan ke utils.js untuk reuse.
+          File: NotificationBell.jsx, utils.js
+
+  [ ] #30 Tidak ada robots.txt dan sitemap.xml
+          Untuk SEO basic.
+          File: (baru) public/robots.txt, public/sitemap.xml
+
+  [ ] #31 No Twitter Card meta tags
+          Hanya OG tags, tidak ada twitter:card dll.
+          File: index.html
+
+  [ ] #32 Icon PWA hanya 2 ukuran
+          Hanya 192x192 dan 512x512, kurang untuk full device coverage.
+          File: vite.config.js, public/icons/
+
+================================================================================
+  P4 — FITUR BARU (Enhancement)
+================================================================================
+
+  [ ] #33 Chat/Messaging admin-client
+          Tidak ada cara komunikasi dalam app antara client dan admin
+          tentang order.
+          Solusi: chat sederhana per-order.
+          Impact: High
+
+  [ ] #34 Order timeline/activity log
+          Tidak ada history perubahan status order.
+          Solusi: tabel order_activities dengan trigger.
+          Impact: Medium
+
+  [ ] #35 File attachment saat buat order
+          Client tidak bisa upload materi pendukung saat submit order.
+          Impact: Medium
+
+  [ ] #36 Export CSV di AdminOrders
+          Admin hanya bisa export di Keuangan, perlu juga di orders.
+          Impact: Low
+
+  [ ] #37 Sort & search di PesananSaya
+          Client tidak bisa search atau sort pesanan mereka.
+          Impact: Low
+
+  [ ] #38 Notification preferences
+          User tidak bisa pilih jenis notifikasi yang mau diterima.
+          Impact: Low
+
+  [ ] #39 Account deletion
+          Tidak ada fitur hapus akun (GDPR-like compliance).
+          Impact: Low
+
+  [ ] #40 Dark/Light mode toggle
+          Saat ini fixed dark mode.
+          Impact: Low
+
+================================================================================
+  URUTAN IMPLEMENTASI
+================================================================================
+
+  Batch 1 — Security & Stability (P0):  #1, #2
+  Batch 2 — Core UX Issues (P1):        #3, #4, #5, #6, #7, #8
+  Batch 3 — Quality & Polish (P2):       #9 - #21
+  Batch 4 — Clean up (P3):              #22 - #32
+  Batch 5 — New Features (P4):          #33 - #40
+
+================================================================================
+  CATATAN
+================================================================================
+
+  - Jalankan semua file SQL baru di Supabase SQL Editor setelah commit
+  - Setiap batch harus di-test dan di-commit terpisah
+  - Update status di file ini setelah setiap item selesai
+
+================================================================================
