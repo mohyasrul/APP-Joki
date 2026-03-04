@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
 import { formatRupiah } from '../../lib/utils'
 import { STATUS_COLORS, BAYAR_COLORS } from '../../lib/constants'
-import { ShoppingCart, CheckCircle, XCircle, Eye, Package, Clock, Inbox, Star, AlertCircle, RefreshCw, Search, ArrowUpDown } from 'lucide-react'
+import { ShoppingCart, CheckCircle, XCircle, Eye, Package, Clock, Inbox, Star, AlertCircle, RefreshCw, Search, ArrowUpDown, TrendingUp } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 const REQ_STATUS = {
@@ -89,7 +89,7 @@ export default function PesananSaya() {
         }
     }
 
-    const filters = ['Semua', 'Menunggu Diproses', 'Sedang Dikerjakan', 'Selesai']
+    const filters = ['Semua', 'Menunggu Diproses', 'Sedang Dikerjakan', 'Selesai', 'Belum Bayar']
     const sorted = [...orders].sort((a, b) => {
         if (sort === 'terbaru') return new Date(b.created_at) - new Date(a.created_at)
         if (sort === 'terlama') return new Date(a.created_at) - new Date(b.created_at)
@@ -98,7 +98,10 @@ export default function PesananSaya() {
         return 0
     })
     const filtered = sorted.filter(o => {
-        const matchFilter = filter === 'Semua' || o.status_pekerjaan === filter
+        let matchFilter
+        if (filter === 'Semua') matchFilter = true
+        else if (filter === 'Belum Bayar') matchFilter = o.status_pembayaran === 'Belum Bayar' && o.status_pekerjaan !== 'Batal'
+        else matchFilter = o.status_pekerjaan === filter
         const q = search.toLowerCase()
         const matchSearch = !q || (o.layanan?.judul_tugas || '').toLowerCase().includes(q) || (o.detail_tambahan || '').toLowerCase().includes(q)
         return matchFilter && matchSearch
@@ -109,6 +112,13 @@ export default function PesananSaya() {
     // Reset page when filter/search/sort changes
     useEffect(() => { setCurrentPage(1) }, [filter, search, sort])
 
+    const statsData = {
+        aktif: orders.filter(o => ['Menunggu Diproses', 'Sedang Dikerjakan'].includes(o.status_pekerjaan)).length,
+        selesai: orders.filter(o => o.status_pekerjaan === 'Selesai').length,
+        pengeluaran: orders.filter(o => o.status_pembayaran === 'Lunas').reduce((sum, o) => sum + (o.harga_final || 0), 0),
+        belumBayar: orders.filter(o => o.status_pembayaran === 'Belum Bayar' && o.status_pekerjaan !== 'Batal').length,
+    }
+
     return (
         <div className="fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -118,7 +128,32 @@ export default function PesananSaya() {
                     </h1>
                     <p className="text-sm text-slate-400 mt-1">{orders.length} pesanan</p>
                 </div>
-                <div className="flex gap-2 w-full sm:w-auto">
+            </div>
+
+            {/* Stats Bar */}
+            {!loading && orders.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                    <button onClick={() => setFilter('Semua')} className="glass rounded-xl p-3 text-left hover:bg-white/[0.03] transition-all">
+                        <p className="text-xs text-slate-500 mb-0.5">Total Pesanan</p>
+                        <p className="text-xl font-bold text-white">{orders.length}</p>
+                    </button>
+                    <button onClick={() => setFilter('Sedang Dikerjakan')} className="glass rounded-xl p-3 text-left hover:bg-white/[0.03] transition-all">
+                        <p className="text-xs text-slate-500 mb-0.5">Aktif</p>
+                        <p className="text-xl font-bold text-blue-400">{statsData.aktif}</p>
+                    </button>
+                    <button onClick={() => setFilter('Selesai')} className="glass rounded-xl p-3 text-left hover:bg-white/[0.03] transition-all">
+                        <p className="text-xs text-slate-500 mb-0.5">Selesai</p>
+                        <p className="text-xl font-bold text-green-400">{statsData.selesai}</p>
+                    </button>
+                    <div className="glass rounded-xl p-3">
+                        <p className="text-xs text-slate-500 mb-0.5">Total Pengeluaran</p>
+                        <p className="text-sm font-bold gradient-text">{formatRupiah(statsData.pengeluaran)}</p>
+                    </div>
+                </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                <div className="flex gap-2 w-full">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                         <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari tugas..."

@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { useToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import { formatRupiah } from '../../lib/utils'
-import { BookOpen, Plus, Edit3, ToggleLeft, ToggleRight, Save, Loader2, Trash2 } from 'lucide-react'
+import { BookOpen, Plus, Edit3, ToggleLeft, ToggleRight, Save, Loader2, Trash2, Copy, Clock } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 export default function KelolaLayanan() {
@@ -11,7 +11,7 @@ export default function KelolaLayanan() {
     const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
     const [editing, setEditing] = useState(null)
-    const [form, setForm] = useState({ judul_tugas: '', deskripsi: '', harga_estimasi: '', kategori: 'Lainnya', tersedia: true })
+    const [form, setForm] = useState({ judul_tugas: '', deskripsi: '', harga_estimasi: '', estimasi_hari: '', kategori: 'Lainnya', tersedia: true })
     const [saving, setSaving] = useState(false)
     const [deleteTarget, setDeleteTarget] = useState(null)
     const [kategoriOptions, setKategoriOptions] = useState([])
@@ -34,18 +34,31 @@ export default function KelolaLayanan() {
     const openModal = (item = null) => {
         if (item) {
             setEditing(item)
-            setForm({ judul_tugas: item.judul_tugas, deskripsi: item.deskripsi || '', harga_estimasi: item.harga_estimasi, kategori: item.kategori || 'Lainnya', tersedia: item.tersedia })
+            setForm({ judul_tugas: item.judul_tugas, deskripsi: item.deskripsi || '', harga_estimasi: item.harga_estimasi, estimasi_hari: item.estimasi_hari || '', kategori: item.kategori || 'Lainnya', tersedia: item.tersedia })
         } else {
             setEditing(null)
-            setForm({ judul_tugas: '', deskripsi: '', harga_estimasi: '', kategori: kategoriOptions[0] || 'Lainnya', tersedia: true })
+            setForm({ judul_tugas: '', deskripsi: '', harga_estimasi: '', estimasi_hari: '', kategori: kategoriOptions[0] || 'Lainnya', tersedia: true })
         }
+        setShowModal(true)
+    }
+
+    const handleDuplicate = (item) => {
+        setEditing(null)
+        setForm({
+            judul_tugas: item.judul_tugas + ' (Salinan)',
+            deskripsi: item.deskripsi || '',
+            harga_estimasi: item.harga_estimasi,
+            estimasi_hari: item.estimasi_hari || '',
+            kategori: item.kategori || 'Lainnya',
+            tersedia: false,
+        })
         setShowModal(true)
     }
 
     const handleSave = async (e) => {
         e.preventDefault()
         setSaving(true)
-        const payload = { judul_tugas: form.judul_tugas, deskripsi: form.deskripsi, harga_estimasi: parseInt(form.harga_estimasi), kategori: form.kategori, tersedia: form.tersedia }
+        const payload = { judul_tugas: form.judul_tugas, deskripsi: form.deskripsi, harga_estimasi: parseInt(form.harga_estimasi), estimasi_hari: form.estimasi_hari ? parseInt(form.estimasi_hari) : null, kategori: form.kategori, tersedia: form.tersedia }
         try {
             if (editing) {
                 const { error } = await supabase.from('layanan').update(payload).eq('id', editing.id)
@@ -111,14 +124,22 @@ export default function KelolaLayanan() {
                                     </span>
                                 </div>
                                 <p className="text-sm text-slate-400 truncate">{item.deskripsi || '-'}</p>
-                                <p className="text-sm font-semibold gradient-text mt-1">{formatRupiah(item.harga_estimasi)}</p>
+                                <div className="flex items-center gap-3 mt-1">
+                                    <p className="text-sm font-semibold gradient-text">{formatRupiah(item.harga_estimasi)}</p>
+                                    {item.estimasi_hari && (
+                                        <span className="flex items-center gap-1 text-xs text-slate-400">
+                                            <Clock className="w-3 h-3" /> {item.estimasi_hari} hari
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
-                                <button onClick={() => toggleTersedia(item)} className={`p-2 rounded-lg transition-all ${item.tersedia ? 'text-green-400 hover:bg-green-500/10' : 'text-slate-500 hover:bg-white/5'}`}>
+                                <button onClick={() => toggleTersedia(item)} title={item.tersedia ? 'Nonaktifkan' : 'Aktifkan'} className={`p-2 rounded-lg transition-all ${item.tersedia ? 'text-green-400 hover:bg-green-500/10' : 'text-slate-500 hover:bg-white/5'}`}>
                                     {item.tersedia ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
                                 </button>
-                                <button onClick={() => openModal(item)} className="p-2 rounded-lg text-slate-400 hover:text-primary-light hover:bg-primary/10 transition-all"><Edit3 className="w-5 h-5" /></button>
-                                <button onClick={() => setDeleteTarget(item)} className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"><Trash2 className="w-5 h-5" /></button>
+                                <button onClick={() => handleDuplicate(item)} title="Duplikat" className="p-2 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all"><Copy className="w-5 h-5" /></button>
+                                <button onClick={() => openModal(item)} title="Edit" className="p-2 rounded-lg text-slate-400 hover:text-primary-light hover:bg-primary/10 transition-all"><Edit3 className="w-5 h-5" /></button>
+                                <button onClick={() => setDeleteTarget(item)} title="Hapus" className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"><Trash2 className="w-5 h-5" /></button>
                             </div>
                         </div>
                     ))}
@@ -145,9 +166,15 @@ export default function KelolaLayanan() {
                         <label className="block text-sm font-medium text-slate-300 mb-1.5">Deskripsi</label>
                         <textarea value={form.deskripsi} onChange={(e) => setForm({ ...form, deskripsi: e.target.value })} rows={3} className={inputClass + ' resize-none'} placeholder="Deskripsi singkat..." />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Harga (Rp)</label>
-                        <input type="number" value={form.harga_estimasi} onChange={(e) => setForm({ ...form, harga_estimasi: e.target.value })} className={inputClass} placeholder="50000" required min="0" />
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Harga (Rp)</label>
+                            <input type="number" value={form.harga_estimasi} onChange={(e) => setForm({ ...form, harga_estimasi: e.target.value })} className={inputClass} placeholder="50000" required min="0" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Estimasi (hari)</label>
+                            <input type="number" value={form.estimasi_hari} onChange={(e) => setForm({ ...form, estimasi_hari: e.target.value })} className={inputClass} placeholder="3" min="1" />
+                        </div>
                     </div>
                     <button type="submit" disabled={saving}
                         className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-primary/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2">

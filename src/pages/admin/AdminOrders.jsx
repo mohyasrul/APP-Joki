@@ -7,7 +7,8 @@ import { formatRupiah } from '../../lib/utils'
 import { STATUS_COLORS, BAYAR_COLORS, getFileIcon, formatSize } from '../../lib/constants'
 import {
     ClipboardList, Search, CheckCircle, XCircle, X, Image as ImageIcon,
-    Loader2, AlertTriangle, Upload, Star, FileText, Download, ExternalLink, Eye, FileDown, MessageCircle
+    Loader2, AlertTriangle, Upload, Star, FileText, Download, ExternalLink, Eye, FileDown, MessageCircle,
+    StickyNote, Paperclip, Filter, Clock
 } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
@@ -37,6 +38,19 @@ export default function AdminOrders() {
 
     // Chat modal (#33)
     const [chatOrder, setChatOrder] = useState(null)
+
+    // Date range filter
+    const [dateFrom, setDateFrom] = useState('')
+    const [dateTo, setDateTo] = useState('')
+    const [showDateFilter, setShowDateFilter] = useState(false)
+
+    // Catatan internal modal
+    const [catatanModal, setCatatanModal] = useState(null)
+    const [catatanText, setCatatanText] = useState('')
+    const [savingCatatan, setSavingCatatan] = useState(false)
+
+    // View order_files modal
+    const [viewOrderFiles, setViewOrderFiles] = useState(null)
 
     const fetchOrders = useCallback(async (page = currentPage, statusFilter = filter, searchTerm = search) => {
         try {
@@ -74,6 +88,9 @@ export default function AdminOrders() {
                     query = query.eq('status_pekerjaan', statusFilter)
                 }
 
+                if (dateFrom) query = query.gte('created_at', dateFrom)
+                if (dateTo) query = query.lte('created_at', dateTo + 'T23:59:59')
+
                 const from = (page - 1) * ITEMS_PER_PAGE
                 const to = from + ITEMS_PER_PAGE - 1
                 query = query.range(from, to)
@@ -108,7 +125,7 @@ export default function AdminOrders() {
     }, [])
 
     // Refetch when filter or page changes
-    useEffect(() => { fetchOrders(currentPage, filter, search) }, [filter, currentPage])
+    useEffect(() => { fetchOrders(currentPage, filter, search) }, [filter, currentPage, dateFrom, dateTo])
 
     // Debounced search
     useEffect(() => {
@@ -180,8 +197,31 @@ export default function AdminOrders() {
         setUploadModal(null)
     }
 
-    const isDeadlineSoon = (d) => { if (!d) return false; const diff = new Date(d) - new Date(); return diff > 0 && diff < 86400000 }
+    const isDeadlineSoon = (d) => { if (!d) return false; const diff = new Date(d) - new Date(); return diff > 0 && diff < 86400000 * 3 }
+    const isUrgent = (d) => { if (!d) return false; const diff = new Date(d) - new Date(); return diff > 0 && diff < 86400000 }
     const isOverdue = (d) => d && new Date(d) < new Date()
+
+    const getDaysLeft = (d) => {
+        if (!d) return null
+        const diff = new Date(d) - new Date()
+        if (diff < 0) return 'Terlambat'
+        const days = Math.floor(diff / 86400000)
+        const hours = Math.floor((diff % 86400000) / 3600000)
+        if (days === 0) return `${hours}j lagi`
+        return `${days}h lagi`
+    }
+
+    const saveCatatanInternal = async () => {
+        if (!catatanModal) return
+        setSavingCatatan(true)
+        try {
+            await supabase.from('orders').update({ catatan_internal: catatanText || null }).eq('id', catatanModal.id)
+            toast.success('Catatan internal tersimpan')
+            fetchOrders()
+            setCatatanModal(null)
+        } catch (err) { toast.error('Gagal menyimpan: ' + err.message) }
+        finally { setSavingCatatan(false) }
+    }
 
     const filters = ['Semua', 'Menunggu Verifikasi', 'Menunggu Diproses', 'Sedang Dikerjakan', 'Selesai']
 
@@ -248,8 +288,29 @@ export default function AdminOrders() {
                         className="p-2.5 rounded-xl glass text-slate-400 hover:text-white hover:bg-white/10 transition-all shrink-0">
                         <FileDown className="w-5 h-5" />
                     </button>
+                    <button onClick={() => setShowDateFilter(!showDateFilter)} title="Filter Tanggal"
+                        className={`p-2.5 rounded-xl transition-all shrink-0 ${showDateFilter ? 'bg-primary/20 text-primary-light' : 'glass text-slate-400 hover:text-white hover:bg-white/10'}`}>
+                        <Filter className="w-5 h-5" />
+                    </button>
                 </div>
             </div>
+
+            {/* Date range filter */}
+            {showDateFilter && (
+                <div className="glass rounded-2xl p-4 mb-4 flex flex-wrap items-center gap-3">
+                    <span className="text-sm text-slate-400">Dari:</span>
+                    <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1) }}
+                        className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-primary/50" />
+                    <span className="text-sm text-slate-400">Sampai:</span>
+                    <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setCurrentPage(1) }}
+                        className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-primary/50" />
+                    {(dateFrom || dateTo) && (
+                        <button onClick={() => { setDateFrom(''); setDateTo('') }} className="text-xs text-red-400 hover:text-red-300 transition-colors">
+                            Reset
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* Filters */}
             <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
@@ -303,6 +364,27 @@ export default function AdminOrders() {
                                         {order.jumlah_revisi > 0 && <p className="text-xs text-blue-400 mt-0.5">🔄 Revisi ke-{order.jumlah_revisi}</p>}
                                         {hasHasil && <p className="text-xs text-green-400 mt-0.5">✅ Hasil: {order.hasil_files?.length || 1} file</p>}
                                         {order.review && <p className="text-xs text-yellow-400/70 mt-0.5 truncate">💬 "{order.review}"</p>}
+                                        <div className="flex items-center gap-3 mt-1">
+                                            {order.order_files?.length > 0 && (
+                                                <button onClick={() => setViewOrderFiles(order)} className="flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 transition-colors">
+                                                    <Paperclip className="w-3 h-3" /> {order.order_files.length} lampiran klien
+                                                </button>
+                                            )}
+                                            {order.catatan_internal && (
+                                                <span className="flex items-center gap-1 text-xs text-amber-400">
+                                                    <StickyNote className="w-3 h-3" /> Ada catatan internal
+                                                </span>
+                                            )}
+                                            {order.tenggat_waktu && !['Selesai', 'Batal'].includes(order.status_pekerjaan) && (
+                                                <span className={`flex items-center gap-1 text-xs font-medium ${
+                                                    isOverdue(order.tenggat_waktu) ? 'text-red-400' :
+                                                    isUrgent(order.tenggat_waktu) ? 'text-orange-400' :
+                                                    isDeadlineSoon(order.tenggat_waktu) ? 'text-yellow-400' : 'text-slate-500'
+                                                }`}>
+                                                    <Clock className="w-3 h-3" /> {getDaysLeft(order.tenggat_waktu)}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -333,6 +415,13 @@ export default function AdminOrders() {
                                         {/* Chat (#33) */}
                                         <button onClick={() => setChatOrder(order)} className="p-2 rounded-lg text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all" title="Diskusi dengan Klien">
                                             <MessageCircle className="w-4 h-4" />
+                                        </button>
+
+                                        {/* Catatan Internal */}
+                                        <button onClick={() => { setCatatanModal(order); setCatatanText(order.catatan_internal || '') }}
+                                            className={`p-2 rounded-lg transition-all ${order.catatan_internal ? 'text-amber-400 hover:bg-amber-500/10' : 'text-slate-400 hover:text-amber-400 hover:bg-amber-500/10'}`}
+                                            title="Catatan Internal">
+                                            <StickyNote className="w-4 h-4" />
                                         </button>
 
                                         {!['Selesai', 'Batal'].includes(order.status_pekerjaan) && (
@@ -484,6 +573,50 @@ export default function AdminOrders() {
             {/* Chat Modal (#33) */}
             <Modal open={!!chatOrder} onClose={() => setChatOrder(null)} title={chatOrder ? `Diskusi — ${chatOrder.layanan?.judul_tugas}` : ''} maxWidth="max-w-lg" scrollable>
                 {chatOrder && <OrderChat orderId={chatOrder.id} />}
+            </Modal>
+
+            {/* Catatan Internal Modal */}
+            <Modal open={!!catatanModal} onClose={() => setCatatanModal(null)} title="Catatan Internal" maxWidth="max-w-md">
+                {catatanModal && (
+                    <>
+                        <p className="text-sm text-slate-400 mb-3">{catatanModal.layanan?.judul_tugas} — {catatanModal.profiles?.full_name}</p>
+                        <textarea value={catatanText} onChange={(e) => setCatatanText(e.target.value)} rows={5}
+                            className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all resize-none mb-4"
+                            placeholder="Tulis catatan internal di sini (hanya admin yang bisa melihat)..." />
+                        <button onClick={saveCatatanInternal} disabled={savingCatatan}
+                            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                            {savingCatatan ? <Loader2 className="w-5 h-5 animate-spin" /> : <><StickyNote className="w-5 h-5" /> Simpan Catatan</>}
+                        </button>
+                    </>
+                )}
+            </Modal>
+
+            {/* View Order Files (Client Attachments) Modal */}
+            <Modal open={!!viewOrderFiles} onClose={() => setViewOrderFiles(null)} title="Lampiran dari Klien" maxWidth="max-w-md" scrollable>
+                {viewOrderFiles && (
+                    <>
+                        <p className="text-sm text-slate-400 mb-3">{viewOrderFiles.layanan?.judul_tugas} — {viewOrderFiles.profiles?.full_name}</p>
+                        {viewOrderFiles.order_files?.length > 0 ? (
+                            <div className="space-y-2">
+                                {viewOrderFiles.order_files.map((f, i) => (
+                                    <a key={i} href={f.url} target="_blank" rel="noopener noreferrer"
+                                        className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all group">
+                                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            <span className="text-lg">{getFileIcon(f.name)}</span>
+                                            <div className="min-w-0">
+                                                <p className="text-sm text-white truncate group-hover:text-primary-light transition-colors">{f.name}</p>
+                                                {f.size && <p className="text-xs text-slate-500">{formatSize(f.size)}</p>}
+                                            </div>
+                                        </div>
+                                        <Download className="w-4 h-4 text-slate-500 group-hover:text-primary-light shrink-0" />
+                                    </a>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-slate-500 text-center py-4">Tidak ada lampiran</p>
+                        )}
+                    </>
+                )}
             </Modal>
         </div>
     )

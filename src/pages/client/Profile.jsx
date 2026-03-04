@@ -4,7 +4,8 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
-import { User, Save, Camera, Loader2, Mail, Phone, Lock, Eye, EyeOff, Bell, Trash2, AlertTriangle } from 'lucide-react'
+import { User, Save, Camera, Loader2, Mail, Phone, Lock, Eye, EyeOff, Bell, Trash2, AlertTriangle, BarChart2, ShoppingCart, CheckCircle, Wallet, Calendar } from 'lucide-react'
+import { formatRupiah } from '../../lib/utils'
 
 export default function Profile() {
     const { user, profile, setProfile, signOut } = useAuth()
@@ -25,6 +26,9 @@ export default function Profile() {
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [deleteConfirmText, setDeleteConfirmText] = useState('')
     const [deleting, setDeleting] = useState(false)
+    // statistik akun
+    const [clientStats, setClientStats] = useState(null)
+    const [loadingStats, setLoadingStats] = useState(true)
 
     useEffect(() => {
         if (profile) {
@@ -35,6 +39,19 @@ export default function Profile() {
             }
         }
     }, [profile])
+
+    useEffect(() => {
+        if (!user) return
+        const fetchStats = async () => {
+            setLoadingStats(true)
+            try {
+                const { data } = await supabase.rpc('get_client_stats', { p_user_id: user.id })
+                setClientStats(data)
+            } catch (err) { console.error(err) }
+            finally { setLoadingStats(false) }
+        }
+        fetchStats()
+    }, [user])
 
     const handleSave = async (e) => {
         e.preventDefault()
@@ -178,6 +195,37 @@ export default function Profile() {
                         {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> Simpan Profil</>}
                     </button>
                 </form>
+            </div>
+
+            {/* Statistik Akun */}
+            <div className="glass rounded-2xl p-6 glow mt-6">
+                <h2 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                    <BarChart2 className="w-5 h-5 text-primary-light" /> Statistik Akun
+                </h2>
+                {loadingStats ? (
+                    <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                ) : clientStats ? (
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between py-2 border-b border-white/5">
+                            <span className="text-sm text-slate-400 flex items-center gap-2"><Calendar className="w-4 h-4" /> Bergabung Sejak</span>
+                            <span className="text-sm font-medium text-white">{clientStats.bergabung_sejak ? new Date(clientStats.bergabung_sejak).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</span>
+                        </div>
+                        <div className="flex items-center justify-between py-2 border-b border-white/5">
+                            <span className="text-sm text-slate-400 flex items-center gap-2"><ShoppingCart className="w-4 h-4" /> Total Pesanan</span>
+                            <span className="text-sm font-bold text-white">{clientStats.total_orders ?? 0}</span>
+                        </div>
+                        <div className="flex items-center justify-between py-2 border-b border-white/5">
+                            <span className="text-sm text-slate-400 flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-400" /> Pesanan Selesai</span>
+                            <span className="text-sm font-bold text-green-400">{clientStats.selesai ?? 0}</span>
+                        </div>
+                        <div className="flex items-center justify-between py-2">
+                            <span className="text-sm text-slate-400 flex items-center gap-2"><Wallet className="w-4 h-4 text-purple-400" /> Total Pengeluaran</span>
+                            <span className="text-sm font-bold gradient-text">{formatRupiah(clientStats.pengeluaran_total ?? 0)}</span>
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-sm text-slate-500 text-center py-2">Belum ada data statistik.</p>
+                )}
             </div>
 
             {/* Change Password */}

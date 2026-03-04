@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { useToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import { formatRupiah } from '../../lib/utils'
-import { Inbox, CheckCircle, XCircle, X, Loader2, Clock, DollarSign, Calendar, FileText, User } from 'lucide-react'
+import { Inbox, CheckCircle, XCircle, X, Loader2, Clock, DollarSign, Calendar, FileText, User, Search, Paperclip } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 const STATUS_COLORS = {
@@ -23,6 +23,9 @@ export default function AdminRequests() {
     const [harga, setHarga] = useState('')
     const [catatan, setCatatan] = useState('')
     const [processing, setProcessing] = useState(false)
+    const [search, setSearch] = useState('')
+    const [statusFilter, setStatusFilter] = useState('Semua')
+    const [viewFilesModal, setViewFilesModal] = useState(null)
     const toast = useToast()
 
     useEffect(() => {
@@ -111,7 +114,16 @@ export default function AdminRequests() {
     }
 
     const pendingCount = requests.filter(r => r.status === 'pending').length
-    const paginatedRequests = requests.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
+    const statusMap = { 'Semua': null, 'Menunggu': 'pending', 'Diterima': 'accepted', 'Ditolak': 'rejected' }
+    const filteredRequests = requests.filter(r => {
+        const matchSearch = !search.trim() ||
+            r.judul?.toLowerCase().includes(search.toLowerCase()) ||
+            r.profiles?.full_name?.toLowerCase().includes(search.toLowerCase())
+        const matchStatus = statusFilter === 'Semua' || r.status === statusMap[statusFilter]
+        return matchSearch && matchStatus
+    })
+    const paginatedRequests = filteredRequests.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
 
     return (
         <div className="fade-in">
@@ -124,14 +136,36 @@ export default function AdminRequests() {
                         {pendingCount > 0 ? `${pendingCount} request menunggu` : 'Semua request sudah diproses'}
                     </p>
                 </div>
+                {/* Search */}
+                <div className="relative w-full sm:w-72">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                    <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1) }}
+                        placeholder="Cari judul / klien..."
+                        className="w-full pl-11 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all text-sm" />
+                </div>
+            </div>
+
+            {/* Status Tabs */}
+            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+                {['Semua', 'Menunggu', 'Diterima', 'Ditolak'].map(tab => (
+                    <button key={tab} onClick={() => { setStatusFilter(tab); setCurrentPage(1) }}
+                        className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                            statusFilter === tab ? 'bg-primary/20 text-primary-light border border-primary/30' : 'glass text-slate-400 hover:text-white'
+                        }`}>
+                        {tab}
+                        {tab === 'Menunggu' && pendingCount > 0 && (
+                            <span className="w-5 h-5 rounded-full bg-yellow-500 text-black text-xs flex items-center justify-center font-bold badge-pulse">{pendingCount}</span>
+                        )}
+                    </button>
+                ))}
             </div>
 
             {loading ? (
                 <div className="space-y-3">{[1, 2].map(i => <div key={i} className="glass rounded-2xl p-5 h-24 animate-pulse" />)}</div>
-            ) : requests.length === 0 ? (
+            ) : filteredRequests.length === 0 ? (
                 <div className="glass rounded-2xl p-12 text-center">
                     <Inbox className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-slate-300">Belum ada request</h3>
+                    <h3 className="text-lg font-medium text-slate-300">{search ? 'Tidak ditemukan' : 'Belum ada request'}</h3>
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -150,6 +184,19 @@ export default function AdminRequests() {
                                         {req.deadline && <span> • 📅 {new Date(req.deadline).toLocaleDateString('id-ID')}</span>}
                                     </p>
                                     {req.deskripsi && <p className="text-xs text-slate-500 mt-1 line-clamp-2">{req.deskripsi}</p>}
+                                    <div className="flex flex-wrap items-center gap-3 mt-1">
+                                        {(req.budget_min || req.budget_max) && (
+                                            <span className="flex items-center gap-1 text-xs text-emerald-400">
+                                                <DollarSign className="w-3 h-3" />
+                                                Budget: {req.budget_min ? formatRupiah(req.budget_min) : '?'} — {req.budget_max ? formatRupiah(req.budget_max) : '?'}
+                                            </span>
+                                        )}
+                                        {req.lampiran_files?.length > 0 && (
+                                            <button onClick={() => setViewFilesModal(req)} className="flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 transition-colors">
+                                                <Paperclip className="w-3 h-3" /> {req.lampiran_files.length} lampiran
+                                            </button>
+                                        )}
+                                    </div>
                                     {req.harga_final && <p className="text-sm font-semibold gradient-text mt-1">{formatRupiah(req.harga_final)}</p>}
                                 </div>
 
@@ -171,8 +218,8 @@ export default function AdminRequests() {
                 </div>
             )}
 
-            {requests.length > ITEMS_PER_PAGE && (
-                <Pagination currentPage={currentPage} totalItems={requests.length} onPageChange={setCurrentPage} />
+            {filteredRequests.length > ITEMS_PER_PAGE && (
+                <Pagination currentPage={currentPage} totalItems={filteredRequests.length} onPageChange={setCurrentPage} />
             )}
 
             {/* Accept Modal — Set Price */}
@@ -223,6 +270,31 @@ export default function AdminRequests() {
                         <button onClick={() => handleReject(rejectTarget)} className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-medium hover:bg-red-500/30 transition-all">Ya, Tolak</button>
                     </div>
                 </div>
+            </Modal>
+
+            {/* View Lampiran Modal */}
+            <Modal open={!!viewFilesModal} onClose={() => setViewFilesModal(null)} title="Lampiran Request" maxWidth="max-w-md" scrollable>
+                {viewFilesModal && (
+                    <>
+                        <p className="text-sm text-slate-400 mb-3">{viewFilesModal.judul}</p>
+                        {viewFilesModal.lampiran_files?.length > 0 ? (
+                            <div className="space-y-2">
+                                {viewFilesModal.lampiran_files.map((f, i) => (
+                                    <a key={i} href={f.url} target="_blank" rel="noopener noreferrer"
+                                        className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all group">
+                                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            <span className="text-lg">📎</span>
+                                            <p className="text-sm text-white truncate group-hover:text-primary-light transition-colors">{f.name}</p>
+                                        </div>
+                                        <span className="text-xs text-slate-500 shrink-0 ml-2">{f.size ? Math.round(f.size / 1024) + ' KB' : ''}</span>
+                                    </a>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-slate-500 text-center py-4">Tidak ada lampiran</p>
+                        )}
+                    </>
+                )}
             </Modal>
         </div>
     )

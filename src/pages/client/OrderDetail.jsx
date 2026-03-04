@@ -10,7 +10,7 @@ import { formatRupiah } from '../../lib/utils'
 import { getFileIcon, formatSize } from '../../lib/constants'
 import {
     ArrowLeft, Upload, CheckCircle, Clock, FileCheck, AlertCircle,
-    ImageIcon, XCircle, Loader2, Ban, Download, Star, RotateCcw, Tag, FileText, HelpCircle, X, Paperclip
+    ImageIcon, XCircle, Loader2, Ban, Download, Star, RotateCcw, Tag, FileText, HelpCircle, X, Paperclip, Copy
 } from 'lucide-react'
 
 const STATUS_MAP = {
@@ -176,6 +176,37 @@ export default function OrderDetail() {
     const hasilFiles = order.hasil_files || []
     const hasHasil = hasilFiles.length > 0 || order.hasil_url || order.catatan_hasil
 
+    const copyOrderId = () => {
+        navigator.clipboard.writeText(order.id).then(() => toast.success('Order ID disalin!')).catch(() => toast.error('Gagal menyalin'))
+    }
+
+    const getCountdown = (d) => {
+        if (!d) return null
+        const diff = new Date(d) - new Date()
+        if (diff < 0) return { label: 'Tenggat lewat!', color: 'text-red-400 bg-red-500/10' }
+        const days = Math.floor(diff / 86400000)
+        const hours = Math.floor((diff % 86400000) / 3600000)
+        if (days === 0) return { label: `${hours}j lagi`, color: 'text-orange-400 bg-orange-500/10' }
+        if (days <= 2) return { label: `${days}h ${hours}j lagi`, color: 'text-yellow-400 bg-yellow-500/10' }
+        return { label: `${days} hari lagi`, color: 'text-green-400 bg-green-500/10' }
+    }
+
+    const countdown = getCountdown(order.tenggat_waktu)
+
+    const downloadAll = () => {
+        hasilFiles.forEach((f, i) => {
+            setTimeout(() => {
+                const a = document.createElement('a')
+                a.href = f.url
+                a.download = f.name
+                a.target = '_blank'
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+            }, i * 300)
+        })
+    }
+
     return (
         <div className="max-w-2xl mx-auto fade-in">
             <button onClick={() => navigate('/pesanan-saya')} className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors mb-6">
@@ -187,7 +218,10 @@ export default function OrderDetail() {
                 <div className="flex items-start justify-between mb-4">
                     <div>
                         <h2 className="text-xl font-bold text-white">{order.layanan?.judul_tugas || 'Custom Order'}</h2>
-                        <p className="text-sm text-slate-400 mt-1">Order ID: {order.id.slice(0, 8)}...</p>
+                        <button onClick={copyOrderId} className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-primary-light transition-colors mt-1 group">
+                            <span className="font-mono">#{order.id.slice(0, 8)}</span>
+                            <Copy className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
                     </div>
                     <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
                         <StatusIcon className="w-3.5 h-3.5" /> {order.status_pekerjaan}
@@ -203,6 +237,9 @@ export default function OrderDetail() {
                     <div className="p-3 rounded-xl bg-white/5">
                         <p className="text-xs text-slate-500 mb-1">Deadline</p>
                         <p className="text-lg font-semibold text-white">{order.tenggat_waktu ? new Date(order.tenggat_waktu).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}</p>
+                        {countdown && !['Selesai', 'Batal'].includes(order.status_pekerjaan) && (
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${countdown.color}`}>{countdown.label}</span>
+                        )}
                     </div>
                 </div>
 
@@ -230,8 +267,14 @@ export default function OrderDetail() {
             {/* Hasil Tugas */}
             {hasHasil && (
                 <div className="glass rounded-2xl p-6 mb-6">
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <Download className="w-5 h-5 text-green-400" /> Hasil Tugas
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-2"><Download className="w-5 h-5 text-green-400" /> Hasil Tugas</span>
+                        {hasilFiles.length > 1 && (
+                            <button onClick={downloadAll}
+                                className="text-sm px-3 py-1.5 rounded-xl bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-all flex items-center gap-1.5">
+                                <Download className="w-4 h-4" /> Download Semua
+                            </button>
+                        )}
                     </h3>
                     {hasilFiles.length > 0 ? (
                         <div className="space-y-2 mb-4">

@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatRupiah } from '../../lib/utils'
 import { useToast } from '../../components/Toast'
-import { DollarSign, TrendingUp, Calendar, Download, Loader2 } from 'lucide-react'
+import { DollarSign, TrendingUp, Calendar, Download, Loader2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 const BULAN_LABEL = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+const THIS_YEAR = new Date().getFullYear()
+const YEAR_OPTIONS = [THIS_YEAR, THIS_YEAR - 1, THIS_YEAR - 2]
 
 export default function Keuangan() {
     const [summary, setSummary] = useState(null)
@@ -13,12 +15,25 @@ export default function Keuangan() {
     const [totalCount, setTotalCount] = useState(0)
     const [loading, setLoading] = useState(true)
     const [currentPage, setCurrentPage] = useState(1)
+    const [selectedYear, setSelectedYear] = useState(THIS_YEAR)
+    const [unpaidOrders, setUnpaidOrders] = useState([])
+    const [showUnpaid, setShowUnpaid] = useState(false)
     const toast = useToast()
 
-    const fetchSummary = useCallback(async () => {
-        const { data, error } = await supabase.rpc('get_keuangan_summary')
+    const fetchSummary = useCallback(async (year = selectedYear) => {
+        const { data, error } = await supabase.rpc('get_keuangan_summary', { p_year: year })
         if (error) throw error
         setSummary(data)
+    }, [selectedYear])
+
+    const fetchUnpaid = useCallback(async () => {
+        const { data } = await supabase
+            .from('orders')
+            .select('*, layanan(judul_tugas), profiles(full_name)')
+            .in('status_pembayaran', ['Belum Bayar', 'Menunggu Verifikasi'])
+            .not('status_pekerjaan', 'eq', 'Batal')
+            .order('created_at', { ascending: false })
+        setUnpaidOrders(data || [])
     }, [])
 
     const fetchTransactions = useCallback(async (page = 1) => {
@@ -38,7 +53,7 @@ export default function Keuangan() {
     useEffect(() => {
         (async () => {
             try {
-                await Promise.all([fetchSummary(), fetchTransactions(1)])
+                await Promise.all([fetchSummary(selectedYear), fetchTransactions(1), fetchUnpaid()])
             } catch (err) {
                 console.error('Failed to fetch keuangan:', err)
                 toast.error('Gagal memuat data keuangan')
@@ -52,9 +67,14 @@ export default function Keuangan() {
         if (!loading) fetchTransactions(currentPage).catch(() => toast.error('Gagal memuat transaksi'))
     }, [currentPage])
 
+    useEffect(() => {
+        if (!loading) fetchSummary(selectedYear).catch(() => toast.error('Gagal memuat ringkasan'))
+    }, [selectedYear])
+
     const { total = 0, week_total: weekTotal = 0, month_total: monthTotal = 0, growth = 0, monthly = [] } = summary || {}
     const months = (monthly || []).map(m => ({ label: BULAN_LABEL[m.bulan], value: m.value }))
     const maxChart = Math.max(...months.map(m => m.value), 1)
+    const unpaidTotal = unpaidOrders.reduce((sum, o) => sum + (o.harga_final || 0), 0)
 
     // CSV Export — fetches all on demand
     const exportCSV = async () => {
@@ -94,16 +114,23 @@ export default function Keuangan() {
                     </h1>
                     <p className="text-sm text-slate-400 mt-1">Ringkasan pemasukan dari joki tugas</p>
                 </div>
-                <button onClick={exportCSV}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium text-sm hover:shadow-lg hover:shadow-green-500/25 transition-all flex items-center gap-2">
-                    <Download className="w-4 h-4" /> Export CSV
-                </button>
+                <div className="flex items-center gap-3">
+                    {/* Year Selector */}
+                    <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}
+                        className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-primary/50 cursor-pointer">
+                        {YEAR_OPTIONS.map(y => <option key={y} value={y} className="bg-slate-800">{y}</option>)}
+                    </select>
+                    <button onClick={exportCSV}
+                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium text-sm hover:shadow-lg hover:shadow-green-500/25 transition-all flex items-center gap-2">
+                        <Download className="w-4 h-4" /> Export CSV
+                    </button>
+                </div>
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {[
-                    { label: 'Total Pemasukan', value: total, icon: DollarSign, gradient: 'from-primary to-purple-500' },
+                    { label: `Total ${selectedYear}`, value: total, icon: DollarSign, gradient: 'from-primary to-purple-500' },
                     { label: 'Bulan Ini', value: monthTotal, icon: Calendar, gradient: 'from-blue-500 to-cyan-500' },
                     { label: 'Minggu Ini', value: weekTotal, icon: TrendingUp, gradient: 'from-green-500 to-emerald-500' },
                     { label: 'Growth vs Bulan Lalu', value: null, icon: TrendingUp, gradient: growth >= 0 ? 'from-green-500 to-emerald-500' : 'from-red-500 to-pink-500' },
@@ -124,9 +151,42 @@ export default function Keuangan() {
                 ))}
             </div>
 
+            {/* Belum Dibayar Section */}
+            {unpaidOrders.length > 0 && (
+                <div className="glass rounded-2xl p-5 mb-6 border border-orange-500/20">
+                    <button onClick={() => setShowUnpaid(!showUnpaid)}
+                        className="w-full flex items-center justify-between text-left">
+                        <div className="flex items-center gap-3">
+                            <AlertCircle className="w-5 h-5 text-orange-400" />
+                            <div>
+                                <p className="text-sm font-semibold text-white">Belum Dibayar / Menunggu Verifikasi</p>
+                                <p className="text-xs text-slate-400">{unpaidOrders.length} order • Total {formatRupiah(unpaidTotal)}</p>
+                            </div>
+                        </div>
+                        {showUnpaid ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                    </button>
+                    {showUnpaid && (
+                        <div className="mt-4 space-y-2">
+                            {unpaidOrders.map(o => (
+                                <div key={o.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                                    <div>
+                                        <p className="text-sm font-medium text-white">{o.layanan?.judul_tugas || 'Custom Request'}</p>
+                                        <p className="text-xs text-slate-500">{o.profiles?.full_name} • {new Date(o.created_at).toLocaleDateString('id-ID')}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-sm font-bold gradient-text">{formatRupiah(o.harga_final)}</span>
+                                        <p className={`text-xs mt-0.5 ${o.status_pembayaran === 'Menunggu Verifikasi' ? 'text-yellow-400' : 'text-red-400'}`}>{o.status_pembayaran}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Chart */}
             <div className="glass rounded-2xl p-6 mb-8 glow">
-                <h3 className="text-lg font-semibold text-white mb-6">Pendapatan 6 Bulan Terakhir</h3>
+                <h3 className="text-lg font-semibold text-white mb-6">Pendapatan Per Bulan — {selectedYear}</h3>
                 <div className="flex items-end gap-3 h-40">
                     {months.map((m, i) => (
                         <div key={i} className="flex-1 flex flex-col items-center gap-2">

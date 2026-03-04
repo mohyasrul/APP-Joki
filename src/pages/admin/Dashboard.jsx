@@ -5,11 +5,11 @@ import { formatRupiah } from '../../lib/utils'
 import {
     LayoutDashboard, DollarSign, Clock, AlertTriangle,
     TrendingUp, ArrowRight, CheckCircle, Package,
-    BookOpen, ClipboardList, CreditCard, Inbox, Settings, Zap
+    BookOpen, ClipboardList, CreditCard, Inbox, Settings, Zap, Star, MessageSquare
 } from 'lucide-react'
 
 export default function AdminDashboard() {
-    const [stats, setStats] = useState({ totalIncome: 0, activeOrders: 0, pendingVerify: 0, completedOrders: 0 })
+    const [stats, setStats] = useState({ totalIncome: 0, activeOrders: 0, pendingVerify: 0, completedOrders: 0, pendingRequests: 0, avgRating: 0 })
     const [recentOrders, setRecentOrders] = useState([])
     const [loading, setLoading] = useState(true)
     const navigate = useNavigate()
@@ -29,6 +29,8 @@ export default function AdminDashboard() {
                     activeOrders: data.activeOrders || 0,
                     pendingVerify: data.pendingVerify || 0,
                     completedOrders: data.completedOrders || 0,
+                    pendingRequests: data.pendingRequests || 0,
+                    avgRating: data.avgRating || 0,
                 })
                 setRecentOrders((data.recentOrders || []).map(o => ({
                     ...o,
@@ -47,6 +49,8 @@ export default function AdminDashboard() {
         { label: 'Order Aktif', value: stats.activeOrders, icon: Clock, gradient: 'from-blue-500/20 to-cyan-500/20', iconColor: 'text-blue-400' },
         { label: 'Menunggu Verifikasi', value: stats.pendingVerify, icon: AlertTriangle, gradient: 'from-yellow-500/20 to-orange-500/20', iconColor: 'text-yellow-400', pulse: stats.pendingVerify > 0 },
         { label: 'Selesai', value: stats.completedOrders, icon: CheckCircle, gradient: 'from-primary/20 to-purple-500/20', iconColor: 'text-primary-light' },
+        { label: 'Custom Request', value: stats.pendingRequests, icon: Inbox, gradient: 'from-pink-500/20 to-rose-500/20', iconColor: 'text-pink-400', pulse: stats.pendingRequests > 0 },
+        { label: 'Avg Rating', value: stats.avgRating > 0 ? `⭐ ${stats.avgRating}` : '-', icon: Star, gradient: 'from-amber-500/20 to-yellow-500/20', iconColor: 'text-amber-400' },
     ]
 
     const quickActions = [
@@ -76,8 +80,8 @@ export default function AdminDashboard() {
                 <p className="text-sm text-slate-400 mt-1">Selamat datang kembali, Admin!</p>
             </div>
 
-            {/* Stat Cards — 2-col on mobile, 4-col on desktop */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+            {/* Stat Cards — 2-col on mobile, 3-col on desktop */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
                 {statCards.map((card, i) => (
                     <div key={i} className="glass rounded-2xl p-4 sm:p-5 hover:-translate-y-0.5 transition-all duration-200">
                         <div className="flex items-center justify-between mb-2 sm:mb-3">
@@ -148,7 +152,8 @@ export default function AdminDashboard() {
                         {recentOrders.map(order => (
                             <div
                                 key={order.id}
-                                onClick={() => navigate('/admin/orders')}
+                                onClick={() => navigate(`/admin/orders`)}
+                                title={`Order #${order.id.slice(0,8)}`}
                                 className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 cursor-pointer transition-all gap-3"
                             >
                                 <div className="flex-1 min-w-0">

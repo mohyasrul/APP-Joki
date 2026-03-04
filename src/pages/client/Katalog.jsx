@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { formatRupiah } from '../../lib/utils'
-import { ShoppingBag, Search, BookOpen, ArrowRight, Tag, Filter, AlertCircle, RefreshCw } from 'lucide-react'
+import { ShoppingBag, Search, BookOpen, ArrowRight, Tag, Filter, AlertCircle, RefreshCw, Clock, SortAsc, X, Megaphone } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 export default function Katalog() {
@@ -13,9 +13,19 @@ export default function Katalog() {
     const [loading, setLoading] = useState(true)
     const [fetchError, setFetchError] = useState(null)
     const [currentPage, setCurrentPage] = useState(1)
+    const [sort, setSort] = useState('terbaru')
+    const [announcement, setAnnouncement] = useState(null)
+    const [bannerDismissed, setBannerDismissed] = useState(() => sessionStorage.getItem('banner_dismissed') === '1')
     const navigate = useNavigate()
 
-    useEffect(() => { fetchLayanan(); fetchKategori() }, [])
+    useEffect(() => { fetchLayanan(); fetchKategori(); fetchAnnouncement() }, [])
+
+    const fetchAnnouncement = async () => {
+        try {
+            const { data } = await supabase.from('settings').select('data').eq('id', 'app_config').single()
+            if (data?.data?.announcement) setAnnouncement(data.data.announcement)
+        } catch {}
+    }
 
     const fetchLayanan = async () => {
         try {
@@ -46,13 +56,31 @@ export default function Katalog() {
         const matchKategori = kategori === 'Semua' || (l.kategori || 'Lainnya') === kategori
         return matchSearch && matchKategori
     })
-    const paginatedLayanan = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
+    const sorted = [...filtered].sort((a, b) => {
+        if (sort === 'harga_asc') return (a.harga_estimasi || 0) - (b.harga_estimasi || 0)
+        if (sort === 'harga_desc') return (b.harga_estimasi || 0) - (a.harga_estimasi || 0)
+        return new Date(b.created_at) - new Date(a.created_at) // terbaru
+    })
+    const paginatedLayanan = sorted.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
+    const dismissBanner = () => { sessionStorage.setItem('banner_dismissed', '1'); setBannerDismissed(true) }
 
     // Reset page when filter/search changes
-    useEffect(() => { setCurrentPage(1) }, [search, kategori])
+    useEffect(() => { setCurrentPage(1) }, [search, kategori, sort])
 
     return (
         <div className="fade-in">
+            {/* Announcement Banner */}
+            {announcement && !bannerDismissed && (
+                <div className="mb-5 flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-primary/20 to-purple-500/20 border border-primary/20">
+                    <Megaphone className="w-5 h-5 text-primary-light shrink-0" />
+                    <p className="flex-1 text-sm text-slate-200">{announcement}</p>
+                    <button onClick={dismissBanner} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all shrink-0">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -65,6 +93,13 @@ export default function Katalog() {
                     <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari tugas..."
                         className="w-full pl-11 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all text-sm" />
                 </div>
+                {/* Sort */}
+                <select value={sort} onChange={(e) => setSort(e.target.value)}
+                    className="px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-primary/50 cursor-pointer shrink-0">
+                    <option value="terbaru" className="bg-slate-800">Terbaru</option>
+                    <option value="harga_asc" className="bg-slate-800">Harga ↑</option>
+                    <option value="harga_desc" className="bg-slate-800">Harga ↓</option>
+                </select>
             </div>
 
             {/* Dynamic Category Filter */}
@@ -120,7 +155,14 @@ export default function Katalog() {
                             <h3 className="text-lg font-semibold text-white mb-2">{item.judul_tugas}</h3>
                             <p className="text-sm text-slate-400 mb-4 line-clamp-2">{item.deskripsi || 'Tidak ada deskripsi'}</p>
                             <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
-                                <span className="text-xl font-bold gradient-text">{formatRupiah(item.harga_estimasi)}</span>
+                                <div>
+                                    <span className="text-xl font-bold gradient-text">{formatRupiah(item.harga_estimasi)}</span>
+                                    {item.estimasi_hari && (
+                                        <p className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
+                                            <Clock className="w-3 h-3" /> {item.estimasi_hari} hari pengerjaan
+                                        </p>
+                                    )}
+                                </div>
                                 <button onClick={() => navigate('/order/baru', { state: { layanan: item } })}
                                     className="px-4 py-2 rounded-xl bg-primary/20 text-primary-light text-sm font-medium hover:bg-primary/30 transition-all flex items-center gap-1.5 group-hover:bg-primary group-hover:text-white">
                                     Pesan <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />

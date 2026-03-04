@@ -5,7 +5,7 @@ import Modal from '../../components/Modal'
 import { formatRupiah } from '../../lib/utils'
 import {
     Settings, Save, Loader2, CreditCard, Tag, Plus, Trash2, GripVertical,
-    ChevronRight, ArrowLeft, Edit3, ToggleLeft, ToggleRight, Percent
+    ChevronRight, ArrowLeft, Edit3, ToggleLeft, ToggleRight, Percent, Sliders, Megaphone
 } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
@@ -33,7 +33,11 @@ export default function AdminSettings() {
     const [deletePromoTarget, setDeletePromoTarget] = useState(null)
     const [promoPage, setPromoPage] = useState(1)
 
-    useEffect(() => { fetchSettings(); fetchKategori() }, [])
+    // ========== App Config ==========
+    const [appConfig, setAppConfig] = useState({ default_max_revisi: 2, announcement: '' })
+    const [savingConfig, setSavingConfig] = useState(false)
+
+    useEffect(() => { fetchSettings(); fetchKategori(); fetchAppConfig() }, [])
 
     // ========== Payment Handlers ==========
     const fetchSettings = async () => {
@@ -49,6 +53,22 @@ export default function AdminSettings() {
         if (error) toast.error('Gagal menyimpan: ' + error.message)
         else toast.success('Info pembayaran berhasil diperbarui!')
         setSaving(false)
+    }
+
+    // ========== App Config Handlers ==========
+    const fetchAppConfig = async () => {
+        const { data } = await supabase.from('settings').select('*').eq('id', 'app_config').single()
+        if (data?.data) setAppConfig({ default_max_revisi: data.data.default_max_revisi ?? 2, announcement: data.data.announcement || '' })
+    }
+
+    const handleSaveAppConfig = async (e) => {
+        e.preventDefault()
+        setSavingConfig(true)
+        const newData = { default_max_revisi: parseInt(appConfig.default_max_revisi) || 2, announcement: appConfig.announcement.trim() || null }
+        const { error } = await supabase.from('settings').upsert({ id: 'app_config', data: newData, updated_at: new Date().toISOString() })
+        if (error) toast.error('Gagal menyimpan: ' + error.message)
+        else toast.success('Pengaturan umum tersimpan!')
+        setSavingConfig(false)
     }
 
     // ========== Kategori Handlers ==========
@@ -148,10 +168,41 @@ export default function AdminSettings() {
 
     // ========== Menu Items ==========
     const menuItems = [
+        { key: 'general', icon: Sliders, label: 'Pengaturan Umum', desc: 'Max revisi default & pengumuman', gradient: 'from-indigo-500 to-violet-500' },
         { key: 'payment', icon: CreditCard, label: 'Info Pembayaran', desc: 'Atur rekening bank dan e-wallet', gradient: 'from-green-500 to-emerald-500' },
         { key: 'kategori', icon: Tag, label: 'Kategori Layanan', desc: 'Atur kategori yang muncul di katalog', gradient: 'from-blue-500 to-cyan-500' },
         { key: 'promo', icon: Percent, label: 'Kelola Promo', desc: 'Buat dan atur kode promo', gradient: 'from-purple-500 to-pink-500' },
     ]
+
+    // ========== Section: General ==========
+    const renderGeneral = () => (
+        <div className="glass rounded-2xl p-6 glow">
+            <form onSubmit={handleSaveAppConfig} className="space-y-5">
+                <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Max Revisi Default</label>
+                    <p className="text-xs text-slate-500 mb-2">Jumlah revisi standar untuk setiap order baru</p>
+                    <input type="number" value={appConfig.default_max_revisi}
+                        onChange={(e) => setAppConfig({ ...appConfig, default_max_revisi: e.target.value })}
+                        className={inputClass} min="0" max="10" placeholder="2" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                        <span className="flex items-center gap-1.5"><Megaphone className="w-4 h-4 text-primary-light" /> Pengumuman / Banner</span>
+                    </label>
+                    <p className="text-xs text-slate-500 mb-2">Teks pengumuman yang muncul di Katalog. Kosongkan untuk menonaktifkan.</p>
+                    <textarea value={appConfig.announcement}
+                        onChange={(e) => setAppConfig({ ...appConfig, announcement: e.target.value })}
+                        rows={3}
+                        className={inputClass + ' resize-none'}
+                        placeholder="Contoh: 🎉 Promo akhir tahun! Diskon 20% untuk semua layanan..." />
+                </div>
+                <button type="submit" disabled={savingConfig}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 text-white font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                    {savingConfig ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> Simpan Pengaturan</>}
+                </button>
+            </form>
+        </div>
+    )
 
     // ========== Section: Payment ==========
     const renderPayment = () => (
@@ -405,6 +456,7 @@ export default function AdminSettings() {
             )}
 
             {/* Section Content */}
+            {activeSection === 'general' && renderGeneral()}
             {activeSection === 'payment' && renderPayment()}
             {activeSection === 'kategori' && renderKategori()}
             {activeSection === 'promo' && renderPromo()}
