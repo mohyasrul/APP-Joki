@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useBadge } from '../contexts/BadgeContext'
 import { MessageCircle, Send, Loader2 } from 'lucide-react'
 import { timeAgo } from '../lib/utils'
 
 export default function OrderChat({ orderId }) {
     const { user, profile } = useAuth()
+    const { markChatRead } = useBadge()
     const [messages, setMessages] = useState([])
     const [loading, setLoading] = useState(true)
     const [newMsg, setNewMsg] = useState('')
@@ -15,7 +17,7 @@ export default function OrderChat({ orderId }) {
     const fetchMessages = async () => {
         const { data, error } = await supabase
             .from('order_messages')
-            .select('*, profiles(full_name, avatar_url)')
+            .select('*, profiles(full_name, avatar_url, role)')
             .eq('order_id', orderId)
             .order('created_at', { ascending: true })
         if (!error) setMessages(data || [])
@@ -24,6 +26,7 @@ export default function OrderChat({ orderId }) {
 
     useEffect(() => {
         fetchMessages()
+        markChatRead(orderId)
 
         const channel = supabase
             .channel(`order-chat-${orderId}`)
@@ -36,7 +39,7 @@ export default function OrderChat({ orderId }) {
                 // Fetch the new message with profile join
                 const { data } = await supabase
                     .from('order_messages')
-                    .select('*, profiles(full_name, avatar_url)')
+                    .select('*, profiles(full_name, avatar_url, role)')
                     .eq('id', payload.new.id)
                     .single()
                 if (data) setMessages(prev => [...prev, data])
@@ -65,6 +68,12 @@ export default function OrderChat({ orderId }) {
 
     const isOwn = (msg) => msg.sender_id === user.id
 
+    const getSenderLabel = (msg) => {
+        if (isOwn(msg)) return 'Kamu'
+        if (msg.profiles?.role === 'admin') return 'Admin'
+        return msg.profiles?.full_name || 'Pengguna'
+    }
+
     return (
         <div className="glass rounded-2xl p-5 mt-4">
             <h3 className="text-base font-semibold text-white flex items-center gap-2 mb-4">
@@ -90,7 +99,7 @@ export default function OrderChat({ orderId }) {
                             </div>
                             <div className={`max-w-[75%] ${isOwn(msg) ? 'items-end' : 'items-start'} flex flex-col gap-0.5`}>
                                 <p className={`text-[10px] text-slate-500 ${isOwn(msg) ? 'text-right' : ''}`}>
-                                    {isOwn(msg) ? 'Kamu' : msg.profiles?.full_name || 'Admin'}
+                                    {getSenderLabel(msg)}
                                     {' · '}{timeAgo(msg.created_at)}
                                 </p>
                                 <div className={`px-3.5 py-2 rounded-2xl text-sm break-words ${isOwn(msg)

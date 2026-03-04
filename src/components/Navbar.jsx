@@ -8,12 +8,21 @@ import {
 import NotificationBell from './NotificationBell'
 import Modal from './Modal'
 import { useTheme } from '../hooks/useTheme'
+import { useBadge } from '../contexts/BadgeContext'
 
 export default function Navbar() {
     const { profile, signOut, isAdmin } = useAuth()
     const navigate = useNavigate()
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
     const { theme, toggleTheme } = useTheme()
+    const { ordersActionCount, requestsCount, unreadChatCount, fmt } = useBadge()
+
+    const getBadgeCount = (to) => {
+        if (to === '/admin/orders') return ordersActionCount
+        if (to === '/admin/requests') return requestsCount
+        if (to === '/pesanan-saya') return unreadChatCount
+        return 0
+    }
 
     const handleLogout = async () => {
         setShowLogoutConfirm(false)
@@ -59,12 +68,20 @@ export default function Navbar() {
 
                     {/* Desktop Links */}
                     <div className="hidden md:flex items-center gap-1">
-                        {links.map(link => (
-                            <NavLink key={link.to} to={link.to} end className={linkClass}>
-                                <link.icon className="w-4 h-4" />
-                                {link.label}
-                            </NavLink>
-                        ))}
+                        {links.map(link => {
+                            const badge = getBadgeCount(link.to)
+                            return (
+                                <NavLink key={link.to} to={link.to} end className={linkClass}>
+                                    <link.icon className="w-4 h-4" />
+                                    {link.label}
+                                    {badge > 0 && (
+                                        <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                                            {fmt(badge)}
+                                        </span>
+                                    )}
+                                </NavLink>
+                            )
+                        })}
                     </div>
 
                     {/* Desktop User Info */}

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
+import { BadgeProvider } from './contexts/BadgeContext'
 import { ToastProvider } from './components/Toast'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -87,9 +88,11 @@ export default function App() {
       <BrowserRouter>
         <AuthProvider>
           <NotificationProvider>
-            <ToastProvider>
-              <AppRoutes />
-            </ToastProvider>
+            <BadgeProvider>
+              <ToastProvider>
+                <AppRoutes />
+              </ToastProvider>
+            </BadgeProvider>
           </NotificationProvider>
         </AuthProvider>
       </BrowserRouter>
