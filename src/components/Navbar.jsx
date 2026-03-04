@@ -3,15 +3,17 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
     LayoutDashboard, ShoppingBag, ClipboardList, DollarSign,
-    BookOpen, ShoppingCart, LogOut, Sparkles, Settings, User, Inbox
+    BookOpen, ShoppingCart, LogOut, Sparkles, Settings, User, Inbox, Sun, Moon
 } from 'lucide-react'
 import NotificationBell from './NotificationBell'
 import Modal from './Modal'
+import { useTheme } from '../hooks/useTheme'
 
 export default function Navbar() {
     const { profile, signOut, isAdmin } = useAuth()
     const navigate = useNavigate()
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+    const { theme, toggleTheme } = useTheme()
 
     const handleLogout = async () => {
         setShowLogoutConfirm(false)
@@ -68,9 +70,13 @@ export default function Navbar() {
                     {/* Desktop User Info */}
                     <div className="hidden md:flex items-center gap-3">
                         <NotificationBell />
+                        <button onClick={toggleTheme} title={theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
+                            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all">
+                            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                        </button>
                         <NavLink to={isAdmin ? '/admin' : '/profil'} className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-purple-500/30 flex items-center justify-center overflow-hidden border border-white/10 hover:border-primary/50 transition-all">
                             {profile?.avatar_url ? (
-                                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                                <img src={profile.avatar_url} alt="" loading="lazy" className="w-full h-full object-cover" />
                             ) : (
                                 <User className="w-4 h-4 text-slate-400" />
                             )}
@@ -91,9 +97,13 @@ export default function Navbar() {
                     {/* Mobile: Notification + Avatar + Logout only (nav handled by BottomNav) */}
                     <div className="flex md:hidden items-center gap-2">
                         <NotificationBell />
+                        <button onClick={toggleTheme} title="Toggle tema"
+                            className="p-2 rounded-lg text-slate-400 hover:text-white transition-all">
+                            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                        </button>
                         <NavLink to={isAdmin ? '/admin' : '/profil'} className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-purple-500/30 flex items-center justify-center overflow-hidden border border-white/10">
                             {profile?.avatar_url ? (
-                                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                                <img src={profile.avatar_url} alt="" loading="lazy" className="w-full h-full object-cover" />
                             ) : (
                                 <User className="w-4 h-4 text-slate-400" />
                             )}

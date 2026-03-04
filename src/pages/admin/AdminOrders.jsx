@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
+import OrderChat from '../../components/OrderChat'
 import { formatRupiah } from '../../lib/utils'
 import { STATUS_COLORS, BAYAR_COLORS, getFileIcon, formatSize } from '../../lib/constants'
 import {
     ClipboardList, Search, CheckCircle, XCircle, X, Image as ImageIcon,
-    Loader2, AlertTriangle, Upload, Star, FileText, Download, ExternalLink, Eye
+    Loader2, AlertTriangle, Upload, Star, FileText, Download, ExternalLink, Eye, FileDown, MessageCircle
 } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
@@ -33,6 +34,9 @@ export default function AdminOrders() {
 
     // View hasil modal
     const [viewHasil, setViewHasil] = useState(null)
+
+    // Chat modal (#33)
+    const [chatOrder, setChatOrder] = useState(null)
 
     const fetchOrders = useCallback(async (page = currentPage, statusFilter = filter, searchTerm = search) => {
         try {
@@ -181,6 +185,50 @@ export default function AdminOrders() {
 
     const filters = ['Semua', 'Menunggu Verifikasi', 'Menunggu Diproses', 'Sedang Dikerjakan', 'Selesai']
 
+    const exportCSV = async () => {
+        try {
+            let query = supabase
+                .from('orders')
+                .select('*, layanan(judul_tugas), profiles(full_name)')
+                .order('created_at', { ascending: false })
+
+            if (filter === 'Menunggu Verifikasi') {
+                query = query.eq('status_pembayaran', 'Menunggu Verifikasi')
+            } else if (filter !== 'Semua') {
+                query = query.eq('status_pekerjaan', filter)
+            }
+
+            const { data, error } = await query
+            if (error) throw error
+
+            const header = 'Tanggal,Klien,Layanan,Status Pekerjaan,Status Pembayaran,Harga Final,Diskon,Kode Promo,Deadline\n'
+            const rows = (data || []).map(o =>
+                [
+                    new Date(o.created_at).toLocaleDateString('id-ID'),
+                    o.profiles?.full_name || '-',
+                    o.layanan?.judul_tugas || '-',
+                    o.status_pekerjaan || '-',
+                    o.status_pembayaran || '-',
+                    o.harga_final || 0,
+                    o.diskon || 0,
+                    o.kode_promo || '-',
+                    o.tenggat_waktu ? new Date(o.tenggat_waktu).toLocaleDateString('id-ID') : '-',
+                ].join(',')
+            ).join('\n')
+
+            const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `orders_${filter.replace(/ /g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`
+            a.click()
+            URL.revokeObjectURL(url)
+            toast.success('CSV berhasil diexport!')
+        } catch (err) {
+            toast.error('Gagal export CSV: ' + err.message)
+        }
+    }
+
     return (
         <div className="fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -190,10 +238,16 @@ export default function AdminOrders() {
                     </h1>
                     <p className="text-sm text-slate-400 mt-1">{totalOrderCount} total order</p>
                 </div>
-                <div className="relative w-full sm:w-72">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                    <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari klien / tugas..."
-                        className="w-full pl-11 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all text-sm" />
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:w-72">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                        <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari klien / tugas..."
+                            className="w-full pl-11 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all text-sm" />
+                    </div>
+                    <button onClick={exportCSV} title="Export CSV"
+                        className="p-2.5 rounded-xl glass text-slate-400 hover:text-white hover:bg-white/10 transition-all shrink-0">
+                        <FileDown className="w-5 h-5" />
+                    </button>
                 </div>
             </div>
 
@@ -275,6 +329,11 @@ export default function AdminOrders() {
                                                 <Upload className="w-4 h-4" />
                                             </button>
                                         )}
+
+                                        {/* Chat (#33) */}
+                                        <button onClick={() => setChatOrder(order)} className="p-2 rounded-lg text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all" title="Diskusi dengan Klien">
+                                            <MessageCircle className="w-4 h-4" />
+                                        </button>
 
                                         {!['Selesai', 'Batal'].includes(order.status_pekerjaan) && (
                                             <select value={order.status_pekerjaan} onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
@@ -420,6 +479,11 @@ export default function AdminOrders() {
                         )}
                     </>
                 )}
+            </Modal>
+
+            {/* Chat Modal (#33) */}
+            <Modal open={!!chatOrder} onClose={() => setChatOrder(null)} title={chatOrder ? `Diskusi — ${chatOrder.layanan?.judul_tugas}` : ''} maxWidth="max-w-lg" scrollable>
+                {chatOrder && <OrderChat orderId={chatOrder.id} />}
             </Modal>
         </div>
     )

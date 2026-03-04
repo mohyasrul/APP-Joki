@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Bell, CheckCheck, Package, DollarSign, Inbox, ShoppingBag, X } from 'lucide-react'
 import { useNotifications } from '../contexts/NotificationContext'
 import { useAuth } from '../contexts/AuthContext'
-import { timeAgo } from '../lib/constants'
+import { timeAgo } from '../lib/utils'
 
 const TYPE_ICONS = {
   new_order: ShoppingBag,

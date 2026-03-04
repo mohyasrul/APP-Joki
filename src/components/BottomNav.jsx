@@ -43,6 +43,7 @@ export default function BottomNav() {
               key={tab.to}
               to={tab.to}
               end={tab.to === '/admin'}
+              aria-current={isActive ? 'page' : undefined}
               className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 transition-colors duration-200"
             >
               <div className={`p-1.5 rounded-xl transition-all duration-200 ${isActive

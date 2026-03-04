@@ -4,11 +4,13 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
+import OrderChat from '../../components/OrderChat'
+import OrderTimeline from '../../components/OrderTimeline'
 import { formatRupiah } from '../../lib/utils'
 import { getFileIcon, formatSize } from '../../lib/constants'
 import {
     ArrowLeft, Upload, CheckCircle, Clock, FileCheck, AlertCircle,
-    ImageIcon, XCircle, Loader2, Ban, Download, Star, RotateCcw, Tag, FileText, HelpCircle, X
+    ImageIcon, XCircle, Loader2, Ban, Download, Star, RotateCcw, Tag, FileText, HelpCircle, X, Paperclip
 } from 'lucide-react'
 
 const STATUS_MAP = {
@@ -298,9 +300,37 @@ export default function OrderDetail() {
             {order.bukti_transfer_url && (
                 <div className="glass rounded-2xl p-6">
                     <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><ImageIcon className="w-5 h-5 text-primary-light" /> Bukti Transfer</h3>
-                    <img src={order.bukti_transfer_url} alt="Bukti" className="rounded-xl w-full max-h-96 object-contain bg-black/20" />
+                    <img src={order.bukti_transfer_url} alt="Bukti" loading="lazy" className="rounded-xl w-full max-h-96 object-contain bg-black/20" />
                 </div>
             )}
+
+            {/* #35 — Lampiran Order */}
+            {order.order_files?.length > 0 && (
+                <div className="glass rounded-2xl p-6 mt-4">
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <Paperclip className="w-5 h-5 text-primary-light" /> Lampiran Order
+                    </h3>
+                    <div className="space-y-2">
+                        {order.order_files.map((f, i) => (
+                            <a key={i} href={f.url} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all group">
+                                <span className="text-xl">{getFileIcon(f.name)}</span>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm text-white truncate">{f.name}</p>
+                                    {f.size && <p className="text-xs text-slate-500">{formatSize(f.size)}</p>}
+                                </div>
+                                <Download className="w-4 h-4 text-slate-500 group-hover:text-primary-light transition-colors shrink-0" />
+                            </a>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* #34 — Order Timeline */}
+            <OrderTimeline orderId={id} />
+
+            {/* #33 — Chat */}
+            <OrderChat orderId={id} />
 
             {/* ===== MODALS ===== */}
 

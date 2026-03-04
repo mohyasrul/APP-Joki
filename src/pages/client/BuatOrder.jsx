@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import { formatRupiah } from '../../lib/utils'
-import { ShoppingCart, ArrowLeft, Calendar, FileText, AlertCircle, CheckCircle, Eye, Tag, X } from 'lucide-react'
+import { ShoppingCart, ArrowLeft, Calendar, FileText, AlertCircle, CheckCircle, Eye, Tag, X, Paperclip, Upload } from 'lucide-react'
 
 export default function BuatOrder() {
     const location = useLocation()
@@ -18,6 +18,7 @@ export default function BuatOrder() {
     const [deadline, setDeadline] = useState('')
     const [loading, setLoading] = useState(false)
     const [showConfirm, setShowConfirm] = useState(false)
+    const [attachments, setAttachments] = useState([])  // #35 file attachments
 
     // Promo
     const [promoCode, setPromoCode] = useState('')
@@ -127,6 +128,22 @@ export default function BuatOrder() {
 
             if (insertErr) throw insertErr
 
+            // #35 — Upload file attachments if any
+            if (attachments.length > 0) {
+                const uploadedFiles = []
+                for (const file of attachments) {
+                    const ext = file.name.split('.').pop()
+                    const fileName = `order-attachments/${user.id}/${Date.now()}_${file.name}`
+                    const { error: upErr } = await supabase.storage.from('bukti-transfer').upload(fileName, file)
+                    if (upErr) { console.warn('Skip file:', file.name, upErr.message); continue }
+                    const { data: { publicUrl } } = supabase.storage.from('bukti-transfer').getPublicUrl(fileName)
+                    uploadedFiles.push({ name: file.name, url: publicUrl, size: file.size, type: file.type })
+                }
+                if (uploadedFiles.length > 0) {
+                    await supabase.from('orders').update({ order_files: uploadedFiles }).eq('id', data.id)
+                }
+            }
+
             toast.success('Pesanan berhasil dibuat!')
             navigate(`/order/${data.id}`)
         } catch (err) {
@@ -231,6 +248,37 @@ export default function BuatOrder() {
                             </div>
                         </div>
                     )}
+
+                    {/* File Attachments */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Lampiran Pendukung (opsional)</label>
+                        <label className="flex flex-col items-center justify-center p-5 rounded-xl border-2 border-dashed border-white/10 hover:border-primary/30 cursor-pointer transition-all group">
+                            <input type="file" multiple onChange={e => {
+                                const files = Array.from(e.target.files)
+                                const valid = files.filter(f => f.size <= 10 * 1024 * 1024)
+                                if (valid.length < files.length) toast.error('Beberapa file diabaikan (max 10MB per file)')
+                                setAttachments(prev => [...prev, ...valid].slice(0, 5))
+                            }} className="hidden" />
+                            <Paperclip className="w-6 h-6 text-slate-500 group-hover:text-primary-light transition-colors mb-1.5" />
+                            <span className="text-sm text-slate-400 group-hover:text-slate-300 text-center">Klik untuk pilih file</span>
+                            <span className="text-xs text-slate-600 mt-0.5">Max 5 file · 10MB per file · semua format</span>
+                        </label>
+                        {attachments.length > 0 && (
+                            <div className="mt-2 space-y-1.5">
+                                {attachments.map((f, i) => (
+                                    <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5">
+                                        <Paperclip className="w-4 h-4 text-slate-500 shrink-0" />
+                                        <span className="text-xs text-slate-300 flex-1 truncate">{f.name}</span>
+                                        <span className="text-xs text-slate-500">{(f.size / 1024).toFixed(0)}KB</span>
+                                        <button type="button" onClick={() => setAttachments(prev => prev.filter((_, j) => j !== i))}
+                                            className="text-slate-500 hover:text-red-400 transition-colors">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
                     <button type="submit"
                         className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-primary/25 transition-all duration-200 flex items-center justify-center gap-2">

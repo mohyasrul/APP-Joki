@@ -24,6 +24,26 @@ STATUS LEGEND:
           File: App.jsx (baru: ErrorBoundary.jsx)
           DONE: commit 8931b9a — ErrorBoundary wraps entire app
 
+  [x] #41 HOTFIX: orders_client_id_fkey violates pada akun baru
+          Akun yang registrasi SETELAH email verification diaktifkan gagal
+          membuat order karena row di public.profiles tidak pernah dibuat.
+          Root cause: saat email verification ON, signUp() mengembalikan
+          data.session = null, sehingga insert profiles diblokir RLS
+          (auth.uid() = null) dan gagal secara diam-diam.
+          Solusi:
+            1. DB trigger handle_new_user() — SECURITY DEFINER, insert profile
+               saat row baru ditambahkan ke auth.users (sebelum email diverif).
+            2. Metadata full_name & phone dikirim via options.data di signUp()
+               agar trigger bisa baca tanpa session.
+            3. Guard manual insert di signUp(): hanya jalan jika data.session
+               ada (auto-confirm mode), tidak lagi silent-fail.
+            4. Safety-net di fetchProfile(): jika PGRST116 (no row), auto-insert
+               profile — menangani akun lama yang sudah terlanjur tanpa profile.
+            5. Back-fill query di upgrade-v8.sql untuk akun confirmed yang
+               profilnya hilang sebelum fix ini di-deploy.
+          File: upgrade-v8.sql (baru), AuthContext.jsx
+          DONE: upgrade-v8.sql + AuthContext.jsx patched
+
 ================================================================================
   P1 — HIGH (Sangat penting)
 ================================================================================
@@ -133,99 +153,132 @@ STATUS LEGEND:
   P3 — LOW (Nice to have / Polish)
 ================================================================================
 
-  [ ] #22 Tidak ada CSP header
+  [x] #22 Tidak ada CSP header
           Tidak ada Content-Security-Policy di security headers Vercel.
           File: vercel.json
+          DONE: CSP header ditambahkan ke vercel.json
 
-  [ ] #23 Rating tanpa CHECK constraint
+  [x] #23 Rating tanpa CHECK constraint
           orders.rating bisa diisi 0 atau 999.
           Solusi: ALTER TABLE orders ADD CONSTRAINT rating_check
           CHECK (rating >= 1 AND rating <= 5).
+          DONE: upgrade-v9.sql — rating_range_check constraint (IS NULL OR 1-5)
 
-  [ ] #24 Notification cleanup
+  [x] #24 Notification cleanup
           Tabel notifications tumbuh tanpa batas.
           Solusi: scheduled cleanup atau TTL (delete > 30 hari).
+          DONE: upgrade-v9.sql — cleanup_old_notifications() + idx_notifications_created_at
+                (pg_cron schedule tersedia, lihat komentar di upgrade-v9.sql)
 
-  [ ] #25 Image loading="lazy" missing
+  [x] #25 Image loading="lazy" missing
           Avatar dan bukti transfer image tidak lazy loaded.
           File: Navbar.jsx, OrderDetail.jsx
+          DONE: loading="lazy" ditambahkan ke semua img tag terkait
 
-  [ ] #26 BottomNav missing aria-current="page"
+  [x] #26 BottomNav missing aria-current="page"
           Active tab hanya ditandai warna, tidak ada ARIA attribute.
           File: BottomNav.jsx
+          DONE: aria-current={isActive ? 'page' : undefined} pada setiap NavLink
 
-  [ ] #27 Loading spinner tanpa aria-label
+  [x] #27 Loading spinner tanpa aria-label
           Spinner loading tidak punya role="status" atau label.
           File: App.jsx, ProtectedRoute.jsx
+          DONE: role="status" + aria-label ditambahkan ke semua spinner wrapper
 
-  [ ] #28 Filter buttons tanpa aria-pressed
+  [x] #28 Filter buttons tanpa aria-pressed
           Tombol filter di Katalog dan PesananSaya tidak ada state ARIA.
           File: Katalog.jsx, PesananSaya.jsx
+          DONE: aria-pressed={aktif} ditambahkan ke semua filter button
 
-  [ ] #29 timeAgo di NotificationBell
+  [x] #29 timeAgo di NotificationBell
           Harusnya dipindahkan ke utils.js untuk reuse.
           File: NotificationBell.jsx, utils.js
+          DONE: timeAgo dipindah ke utils.js, dihapus dari constants.js, import diupdate
 
-  [ ] #30 Tidak ada robots.txt dan sitemap.xml
+  [x] #30 Tidak ada robots.txt dan sitemap.xml
           Untuk SEO basic.
           File: (baru) public/robots.txt, public/sitemap.xml
+          DONE: kedua file dibuat di public/
 
-  [ ] #31 No Twitter Card meta tags
+  [x] #31 No Twitter Card meta tags
           Hanya OG tags, tidak ada twitter:card dll.
           File: index.html
+          DONE: sudah ada sebelumnya (twitter:card, title, description, image)
 
-  [ ] #32 Icon PWA hanya 2 ukuran
+  [x] #32 Icon PWA hanya 2 ukuran
           Hanya 192x192 dan 512x512, kurang untuk full device coverage.
           File: vite.config.js, public/icons/
+          DONE: purpose: 'any' ditambahkan ke icon 192 dan 512; maskable tetap ada
 
 ================================================================================
   P4 — FITUR BARU (Enhancement)
 ================================================================================
 
-  [ ] #33 Chat/Messaging admin-client
+  [x] #33 Chat/Messaging admin-client
           Tidak ada cara komunikasi dalam app antara client dan admin
           tentang order.
           Solusi: chat sederhana per-order.
+          DONE: upgrade-v10.sql (order_messages table + RLS + Realtime),
+                OrderChat.jsx component, OrderDetail.jsx (client view),
+                AdminOrders.jsx (admin modal + MessageCircle button per order)
           Impact: High
 
-  [ ] #34 Order timeline/activity log
+  [x] #34 Order timeline/activity log
           Tidak ada history perubahan status order.
           Solusi: tabel order_activities dengan trigger.
+          DONE: upgrade-v10.sql (order_activities table + trigger),
+                OrderTimeline.jsx component, OrderDetail.jsx
           Impact: Medium
 
-  [ ] #35 File attachment saat buat order
+  [x] #35 File attachment saat buat order
           Client tidak bisa upload materi pendukung saat submit order.
+          DONE: upgrade-v10.sql (order_files jsonb column),
+                BuatOrder.jsx (file picker + upload), OrderDetail.jsx (display)
           Impact: Medium
 
-  [ ] #36 Export CSV di AdminOrders
+  [x] #36 Export CSV di AdminOrders
           Admin hanya bisa export di Keuangan, perlu juga di orders.
+          DONE: AdminOrders.jsx (exportCSV function + FileDown button)
           Impact: Low
 
-  [ ] #37 Sort & search di PesananSaya
+  [x] #37 Sort & search di PesananSaya
           Client tidak bisa search atau sort pesanan mereka.
+          DONE: PesananSaya.jsx (search input + sort select)
           Impact: Low
 
-  [ ] #38 Notification preferences
+  [x] #38 Notification preferences
           User tidak bisa pilih jenis notifikasi yang mau diterima.
+          DONE: upgrade-v11.sql (preferences jsonb column),
+                Profile.jsx (toggle switches)
           Impact: Low
 
-  [ ] #39 Account deletion
+  [x] #39 Account deletion
           Tidak ada fitur hapus akun (GDPR-like compliance).
+          DONE: upgrade-v11.sql (delete_own_account() RPC),
+                Profile.jsx (Zona Bahaya + confirm modal)
           Impact: Low
 
-  [ ] #40 Dark/Light mode toggle
+  [x] #40 Dark/Light mode toggle
           Saat ini fixed dark mode.
+          DONE: useTheme.js hook, index.css (data-theme light overrides),
+                Navbar.jsx (Sun/Moon toggle button)
           Impact: Low
 
 ================================================================================
   URUTAN IMPLEMENTASI
 ================================================================================
 
-  Batch 1 — Security & Stability (P0):  #1, #2
-  Batch 2 — Core UX Issues (P1):        #3, #4, #5, #6, #7, #8
-  Batch 3 — Quality & Polish (P2):       #9 - #21
-  Batch 4 — Clean up (P3):              #22 - #32
-  Batch 5 — New Features (P4):          #33 - #40
+  Batch 1 — Security & Stability (P0):  #1, #2          ✓ DONE
+  Batch 2 — Core UX Issues (P1):        #3, #4, #5, #6, #7, #8  ✓ DONE
+  Batch 3 — Quality & Polish (P2):       #9 - #21        ✓ DONE
+  Batch 4 — Clean up (P3):              #22 - #32        ✓ DONE
+  Batch 5 — New Features (P4):          #33 - #40        ✓ DONE
+
+  SQL migrations to run in Supabase SQL Editor (in order):
+    upgrade-v8.sql   — #41 orders_client_id_fkey hotfix
+    upgrade-v9.sql   — #23 rating constraint, #24 notif cleanup
+    upgrade-v10.sql  — #33 chat, #34 timeline, #35 file attachments
+    upgrade-v11.sql  — #38 notif prefs, #39 delete account
 
 ================================================================================
   CATATAN

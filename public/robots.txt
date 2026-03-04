@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /order/
+Disallow: /profil
+
+Sitemap: https://jokskuy.vercel.app/sitemap.xml

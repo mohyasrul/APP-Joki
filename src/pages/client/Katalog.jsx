@@ -71,6 +71,7 @@ export default function Katalog() {
             <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
                 {kategoriList.map(k => (
                     <button key={k} onClick={() => setKategori(k)}
+                        aria-pressed={kategori === k}
                         className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${kategori === k ? 'bg-primary/20 text-primary-light border border-primary/30' : 'glass text-slate-400 hover:text-white'
                             }`}>
                         {k === 'Semua' && <Filter className="w-3.5 h-3.5" />}

@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
 import { formatRupiah } from '../../lib/utils'
 import { STATUS_COLORS, BAYAR_COLORS } from '../../lib/constants'
-import { ShoppingCart, CheckCircle, XCircle, Eye, Package, Clock, Inbox, Star, AlertCircle, RefreshCw } from 'lucide-react'
+import { ShoppingCart, CheckCircle, XCircle, Eye, Package, Clock, Inbox, Star, AlertCircle, RefreshCw, Search, ArrowUpDown } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 const REQ_STATUS = {
@@ -20,6 +20,8 @@ export default function PesananSaya() {
     const [loading, setLoading] = useState(true)
     const [fetchError, setFetchError] = useState(null)
     const [filter, setFilter] = useState('Semua')
+    const [search, setSearch] = useState('')
+    const [sort, setSort] = useState('terbaru')
     const [currentPage, setCurrentPage] = useState(1)
     const [reqPage, setReqPage] = useState(1)
     const { user } = useAuth()
@@ -88,12 +90,24 @@ export default function PesananSaya() {
     }
 
     const filters = ['Semua', 'Menunggu Diproses', 'Sedang Dikerjakan', 'Selesai']
-    const filtered = filter === 'Semua' ? orders : orders.filter(o => o.status_pekerjaan === filter)
+    const sorted = [...orders].sort((a, b) => {
+        if (sort === 'terbaru') return new Date(b.created_at) - new Date(a.created_at)
+        if (sort === 'terlama') return new Date(a.created_at) - new Date(b.created_at)
+        if (sort === 'harga_tinggi') return (b.harga_final || 0) - (a.harga_final || 0)
+        if (sort === 'harga_rendah') return (a.harga_final || 0) - (b.harga_final || 0)
+        return 0
+    })
+    const filtered = sorted.filter(o => {
+        const matchFilter = filter === 'Semua' || o.status_pekerjaan === filter
+        const q = search.toLowerCase()
+        const matchSearch = !q || (o.layanan?.judul_tugas || '').toLowerCase().includes(q) || (o.detail_tambahan || '').toLowerCase().includes(q)
+        return matchFilter && matchSearch
+    })
     const paginatedOrders = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
     const paginatedRequests = requests.slice((reqPage - 1) * ITEMS_PER_PAGE, reqPage * ITEMS_PER_PAGE)
 
-    // Reset page when filter changes
-    useEffect(() => { setCurrentPage(1) }, [filter])
+    // Reset page when filter/search/sort changes
+    useEffect(() => { setCurrentPage(1) }, [filter, search, sort])
 
     return (
         <div className="fade-in">
@@ -103,6 +117,23 @@ export default function PesananSaya() {
                         <ShoppingCart className="w-7 h-7 text-primary-light" /> Pesanan Saya
                     </h1>
                     <p className="text-sm text-slate-400 mt-1">{orders.length} pesanan</p>
+                </div>
+                <div className="flex gap-2 w-full sm:w-auto">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                        <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari tugas..."
+                            className="w-full pl-9 pr-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all text-sm" />
+                    </div>
+                    <div className="relative">
+                        <ArrowUpDown className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                        <select value={sort} onChange={e => setSort(e.target.value)}
+                            className="pl-8 pr-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-primary/50 transition-all appearance-none">
+                            <option value="terbaru" className="bg-gray-900">Terbaru</option>
+                            <option value="terlama" className="bg-gray-900">Terlama</option>
+                            <option value="harga_tinggi" className="bg-gray-900">Harga ↑</option>
+                            <option value="harga_rendah" className="bg-gray-900">Harga ↓</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -147,6 +178,7 @@ export default function PesananSaya() {
             <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
                 {filters.map(f => (
                     <button key={f} onClick={() => setFilter(f)}
+                        aria-pressed={filter === f}
                         className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${filter === f ? 'bg-primary/20 text-primary-light border border-primary/30' : 'glass text-slate-400 hover:text-white'}`}>
                         {f}
                     </button>

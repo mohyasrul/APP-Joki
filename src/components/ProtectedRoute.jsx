@@ -7,7 +7,7 @@ export function ProtectedRoute({ children, adminOnly = false }) {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div role="status" aria-label="Memeriksa sesi" className="min-h-screen flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         )

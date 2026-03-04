@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
-import { User, Save, Camera, Loader2, Mail, Phone, Lock, Eye, EyeOff } from 'lucide-react'
+import Modal from '../../components/Modal'
+import { User, Save, Camera, Loader2, Mail, Phone, Lock, Eye, EyeOff, Bell, Trash2, AlertTriangle } from 'lucide-react'
 
 export default function Profile() {
-    const { user, profile, setProfile } = useAuth()
+    const { user, profile, setProfile, signOut } = useAuth()
     const toast = useToast()
+    const navigate = useNavigate()
     const [form, setForm] = useState({ full_name: '', phone: '' })
     const [saving, setSaving] = useState(false)
     const [uploadingAvatar, setUploadingAvatar] = useState(false)
@@ -15,11 +18,21 @@ export default function Profile() {
     const [showNewPw, setShowNewPw] = useState(false)
     const [showConfirmPw, setShowConfirmPw] = useState(false)
     const [savingPw, setSavingPw] = useState(false)
+    // #38 notification preferences
+    const [prefs, setPrefs] = useState({ notif_order_status: true, notif_payment: true, notif_custom_request: true })
+    const [savingPrefs, setSavingPrefs] = useState(false)
+    // #39 account deletion
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [deleteConfirmText, setDeleteConfirmText] = useState('')
+    const [deleting, setDeleting] = useState(false)
 
     useEffect(() => {
         if (profile) {
             setForm({ full_name: profile.full_name || '', phone: profile.phone || '' })
             setAvatarUrl(profile.avatar_url || null)
+            if (profile.preferences) {
+                setPrefs(prev => ({ ...prev, ...profile.preferences }))
+            }
         }
     }, [profile])
 
@@ -73,6 +86,30 @@ export default function Profile() {
             setPw({ newPw: '', confirmPw: '' })
         }
         setSavingPw(false)
+    }
+
+    const handleSavePrefs = async () => {
+        setSavingPrefs(true)
+        const { error } = await supabase.from('profiles').update({ preferences: prefs }).eq('id', user.id)
+        if (error) toast.error('Gagal menyimpan preferensi: ' + error.message)
+        else {
+            toast.success('Preferensi notifikasi tersimpan!')
+            if (setProfile) setProfile(prev => ({ ...prev, preferences: prefs }))
+        }
+        setSavingPrefs(false)
+    }
+
+    const handleDeleteAccount = async () => {
+        if (deleteConfirmText !== 'HAPUS') return
+        setDeleting(true)
+        const { error } = await supabase.rpc('delete_own_account')
+        if (error) {
+            toast.error('Gagal menghapus akun: ' + error.message)
+            setDeleting(false)
+        } else {
+            await signOut()
+            navigate('/login')
+        }
     }
 
     return (
@@ -179,6 +216,77 @@ export default function Profile() {
                     </button>
                 </form>
             </div>
+
+            {/* Notification Preferences */}
+            <div className="glass rounded-2xl p-6 glow mt-6">
+                <h2 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                    <Bell className="w-5 h-5 text-primary-light" /> Preferensi Notifikasi
+                </h2>
+                <div className="space-y-3">
+                    {[
+                        { key: 'notif_order_status', label: 'Update status pesanan' },
+                        { key: 'notif_payment', label: 'Update pembayaran' },
+                        { key: 'notif_custom_request', label: 'Update custom request' },
+                    ].map(({ key, label }) => (
+                        <label key={key} className="flex items-center justify-between cursor-pointer">
+                            <span className="text-sm text-slate-300">{label}</span>
+                            <div className="relative">
+                                <input type="checkbox" className="sr-only" checked={prefs[key]}
+                                    onChange={e => setPrefs(prev => ({ ...prev, [key]: e.target.checked }))} />
+                                <div onClick={() => setPrefs(prev => ({ ...prev, [key]: !prev[key] }))}
+                                    className={`w-11 h-6 rounded-full transition-colors cursor-pointer ${
+                                        prefs[key] ? 'bg-primary' : 'bg-white/10'
+                                    }`}>
+                                    <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                                        prefs[key] ? 'translate-x-5' : 'translate-x-0.5'
+                                    }`} />
+                                </div>
+                            </div>
+                        </label>
+                    ))}
+                </div>
+                <button onClick={handleSavePrefs} disabled={savingPrefs}
+                    className="w-full mt-5 py-2.5 rounded-xl bg-primary/20 text-primary-light font-medium text-sm hover:bg-primary/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                    {savingPrefs ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4" /> Simpan Preferensi</>}
+                </button>
+            </div>
+
+            {/* Danger Zone */}
+            <div className="glass rounded-2xl p-6 border border-red-500/20 mt-6">
+                <h2 className="text-lg font-semibold text-red-400 flex items-center gap-2 mb-2">
+                    <AlertTriangle className="w-5 h-5" /> Zona Bahaya
+                </h2>
+                <p className="text-sm text-slate-400 mb-4">Menghapus akun bersifat permanen. Semua data pesanan, riwayat, dan profil akan dihapus.</p>
+                <button onClick={() => setShowDeleteModal(true)}
+                    className="px-5 py-2.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 font-medium text-sm hover:bg-red-500/20 transition-all flex items-center gap-2">
+                    <Trash2 className="w-4 h-4" /> Hapus Akun Saya
+                </button>
+            </div>
+
+            {/* Delete Confirmation Modal */}
+            <Modal open={showDeleteModal} onClose={() => { setShowDeleteModal(false); setDeleteConfirmText('') }} title={null} showClose={false} maxWidth="max-w-sm">
+                <div className="text-center mb-4">
+                    <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-3">
+                        <Trash2 className="w-7 h-7 text-red-400" />
+                    </div>
+                    <h3 className="text-lg font-bold text-white mb-1">Hapus Akun?</h3>
+                    <p className="text-sm text-slate-400">Tindakan ini tidak dapat dibatalkan. Semua data kamu akan dihapus permanen.</p>
+                </div>
+                <div className="mb-4">
+                    <label className="block text-sm text-slate-400 mb-1.5">Ketik <span className="font-bold text-red-400">HAPUS</span> untuk konfirmasi</label>
+                    <input type="text" value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl bg-red-500/5 border border-red-500/20 text-white placeholder-slate-500 focus:outline-none focus:border-red-500/50 transition-all text-sm"
+                        placeholder="HAPUS" />
+                </div>
+                <div className="flex gap-3">
+                    <button onClick={() => { setShowDeleteModal(false); setDeleteConfirmText('') }}
+                        className="flex-1 py-2.5 rounded-xl glass text-slate-300 font-medium hover:bg-white/10 transition-all text-sm">Batal</button>
+                    <button onClick={handleDeleteAccount} disabled={deleteConfirmText !== 'HAPUS' || deleting}
+                        className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-medium hover:bg-red-500/30 transition-all disabled:opacity-40 text-sm flex items-center justify-center gap-1.5">
+                        {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Trash2 className="w-4 h-4" /> Hapus Permanen</>}
+                    </button>
+                </div>
+            </Modal>
         </div>
     )
 }
