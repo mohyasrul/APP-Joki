@@ -30,7 +30,7 @@ export default function OrderTimeline({ orderId }) {
         const fetchActivities = async () => {
             const { data, error } = await supabase
                 .from('order_activities')
-                .select('*, profiles(full_name)')
+                .select('*, profiles(full_name, role)')
                 .eq('order_id', orderId)
                 .order('created_at', { ascending: false })
             if (!error) setActivities(data || [])
@@ -97,7 +97,7 @@ export default function OrderTimeline({ orderId }) {
                                             </p>
                                         )}
                                         <p className="text-xs text-slate-500 mt-1">
-                                            {act.profiles?.full_name || 'Sistem'}
+                                            {act.profiles?.role === 'admin' ? 'Admin' : (act.profiles?.full_name || 'Sistem')}
                                             {' · '}{timeAgo(act.created_at)}
                                         </p>
                                     </div>
