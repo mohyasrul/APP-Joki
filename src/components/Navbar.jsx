@@ -66,23 +66,25 @@ export default function Navbar() {
                         <span className="font-bold text-lg gradient-text">Jokskuy</span>
                     </div>
 
-                    {/* Desktop Links */}
-                    <div className="hidden md:flex items-center gap-1">
-                        {links.map(link => {
-                            const badge = getBadgeCount(link.to)
-                            return (
-                                <NavLink key={link.to} to={link.to} end className={linkClass}>
-                                    <link.icon className="w-4 h-4" />
-                                    {link.label}
-                                    {badge > 0 && (
-                                        <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
-                                            {fmt(badge)}
-                                        </span>
-                                    )}
-                                </NavLink>
-                            )
-                        })}
-                    </div>
+                    {/* Desktop Links — client only; admin uses Sidebar */}
+                    {!isAdmin && (
+                        <div className="hidden md:flex items-center gap-1">
+                            {links.map(link => {
+                                const badge = getBadgeCount(link.to)
+                                return (
+                                    <NavLink key={link.to} to={link.to} end className={linkClass}>
+                                        <link.icon className="w-4 h-4" />
+                                        {link.label}
+                                        {badge > 0 && (
+                                            <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                                                {fmt(badge)}
+                                            </span>
+                                        )}
+                                    </NavLink>
+                                )
+                            })}
+                        </div>
+                    )}
 
                     {/* Desktop User Info */}
                     <div className="hidden md:flex items-center gap-3">

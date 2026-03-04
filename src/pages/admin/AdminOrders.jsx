@@ -4,7 +4,8 @@ import { useToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import OrderChat from '../../components/OrderChat'
 import { formatRupiah } from '../../lib/utils'
-import { STATUS_COLORS, BAYAR_COLORS, getFileIcon, formatSize } from '../../lib/constants'
+import { getFileIcon, formatSize } from '../../lib/constants'
+import StatusBadge from '../../components/StatusBadge'
 import {
     ClipboardList, Search, CheckCircle, XCircle, X, Image as ImageIcon,
     Loader2, AlertTriangle, Upload, Star, FileText, Download, ExternalLink, Eye, FileDown, MessageCircle,
@@ -312,20 +313,22 @@ export default function AdminOrders() {
                 </div>
             )}
 
-            {/* Filters */}
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-                {filters.map(f => (
-                    <button key={f} onClick={() => setFilter(f)}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${filter === f ? 'bg-primary/20 text-primary-light border border-primary/30' : 'glass text-slate-400 hover:text-white'}`}>
-                        {f === 'Menunggu Verifikasi' && <AlertTriangle className="w-3.5 h-3.5" />}
-                        {f}
-                        {f === 'Menunggu Verifikasi' && pendingVerifyCount > 0 && (
-                            <span className="w-5 h-5 rounded-full bg-yellow-500 text-black text-xs flex items-center justify-center font-bold badge-pulse">
-                                {pendingVerifyCount}
-                            </span>
-                        )}
-                    </button>
-                ))}
+            {/* Filters — segmented control */}
+            <div className="mb-6 overflow-x-auto pb-1">
+                <div className="segmented-tab-container inline-flex">
+                    {filters.map(f => (
+                        <button key={f} onClick={() => setFilter(f)}
+                            className={`segmented-tab-item flex items-center gap-1.5 ${filter === f ? 'active' : ''}`}>
+                            {f === 'Menunggu Verifikasi' && <AlertTriangle className="w-3 h-3" />}
+                            {f}
+                            {f === 'Menunggu Verifikasi' && pendingVerifyCount > 0 && (
+                                <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-yellow-500 text-black text-[10px] flex items-center justify-center font-bold badge-pulse leading-none">
+                                    {pendingVerifyCount}
+                                </span>
+                            )}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Orders List */}
@@ -341,7 +344,7 @@ export default function AdminOrders() {
                     {orders.map(order => {
                         const hasHasil = (order.hasil_files?.length > 0) || order.hasil_url || order.catatan_hasil
                         return (
-                            <div key={order.id} className={`glass rounded-2xl p-5 transition-all hover:bg-white/[0.03] ${isOverdue(order.tenggat_waktu) && !['Selesai', 'Batal'].includes(order.status_pekerjaan) ? 'border border-red-500/30' :
+                            <div key={order.id} className={`glass card-table p-5 transition-all hover:bg-white/[0.03] ${isOverdue(order.tenggat_waktu) && !['Selesai', 'Batal'].includes(order.status_pekerjaan) ? 'border border-red-500/30' :
                                 isDeadlineSoon(order.tenggat_waktu) && !['Selesai', 'Batal'].includes(order.status_pekerjaan) ? 'border border-yellow-500/30' : ''
                                 }`}>
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -388,8 +391,8 @@ export default function AdminOrders() {
                                     </div>
 
                                     <div className="flex flex-wrap items-center gap-2 shrink-0">
-                                        <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${STATUS_COLORS[order.status_pekerjaan]}`}>{order.status_pekerjaan}</span>
-                                        <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${BAYAR_COLORS[order.status_pembayaran]}`}>{order.status_pembayaran}</span>
+                                        <StatusBadge status={order.status_pekerjaan} />
+                                        <StatusBadge status={order.status_pembayaran} />
                                         <span className="text-sm font-bold gradient-text">{formatRupiah(order.harga_final)}</span>
 
                                         {order.bukti_transfer_url && (

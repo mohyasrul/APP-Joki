@@ -398,3 +398,171 @@ STATUS LEGEND:
   - Update status di file ini setelah setiap item selesai
 
 ================================================================================
+
+
+================================================================================
+  UI REDESIGN PLAN — Kombinasi 4 Referensi Desain (4 Maret 2026)
+================================================================================
+
+  SUMBER REFERENSI:
+    contohui.html   — Light sidebar, Orange brand (Inter font)
+                      Elemen adoptable: stat card trend badge, pro banner pattern
+    contohui_3.html — Dark sidebar + glassmorphic header (Plus Jakarta Sans)
+                      Elemen adoptable: sidebar groups, segmented tab, island
+                      bottom nav, shine-sweep animation, status badge border+dot
+    contohui_4.html — Top-nav only, lime green, checkbox table (Plus Jakarta Sans)
+                      Elemen adoptable: rounded-[2rem] table card, custom
+                      checkbox, stat card icon-kanan layout, cmd+K search hint
+    index.css (existing) — Token system, .glass, .glow, .gradient-text — TETAP
+
+  PRINSIP:
+    - Warna / CSS token TIDAK diubah (indigo/purple dark tetap jadi design language)
+    - Hanya shape, layout, dan detail visual yang di-upgrade
+    - Sidebar hanya untuk admin; client tetap pakai topnav
+    - Semua perubahan backward-compatible (tidak ada breaking change)
+
+================================================================================
+  FASE 1 — FOUNDATION (Global)
+================================================================================
+
+  [x] UI-1.1  Font: Inter → Plus Jakarta Sans
+              File  : index.html (tambah Google Fonts link)
+                      src/index.css (update --font-sans)
+              Source: contohui_3.html + contohui_4.html
+              Effort: Sangat rendah
+
+  [x] UI-1.2  Sidebar Layout (Desktop only — admin only)
+              Buat komponen baru: src/components/Sidebar.jsx
+              Ubah: src/components/Layout.jsx → tambah md:flex wrapper
+              Spec:
+                - bg: bg-slate-900/60 backdrop-blur-xl border-r border-white/5
+                - Nav digroup dalam sections: "Menu Utama" & "Keuangan & Laporan"
+                - Section label: text-slate-500 uppercase tracking-wider text-xs
+                - Active item: bg-gradient-to-r from-primary to-purple-500
+                - Shine-sweep hover: overflow-hidden + translate-x group-hover trick
+                - Badge counter: bg-white/20 text-xs rounded-md di dalam active item
+                - User card footer: avatar + nama + role badge
+                - Breakpoint: hidden md:flex (tidak tampil di mobile)
+              Source: contohui_3.html
+              Effort: Tinggi
+
+  [-] UI-1.3  Navbar Client — Tambah cmd+K hint pill (opsional/jika ada search)
+              File  : src/components/Navbar.jsx
+              Source: contohui_3.html + contohui_4.html
+              Effort: Sangat rendah
+
+  [x] UI-1.4  BottomNav — Island Floating Style (Mobile)
+              File  : src/components/BottomNav.jsx
+              Spec:
+                - Container: fixed bottom-6 left-4 right-4 rounded-3xl
+                - bg: bg-slate-900/95 backdrop-blur-xl border border-white/10
+                - Active item: relative -top-4 + border-[5px] border-[#0f0a2e] + icon gradient
+                - PERTAHANKAN: env(safe-area-inset-bottom) + badge merah
+              Source: contohui_3.html
+              Effort: Sedang
+
+================================================================================
+  FASE 2 — KOMPONEN SHARED
+================================================================================
+
+  [x] UI-2.1  StatusBadge — Shared Component Baru
+              File  : src/components/StatusBadge.jsx (baru)
+              DONE  : rounded-full border pill, animated dot for active statuses,
+                      covers order/payment/custom-request statuses.
+                      Adopted in: AdminOrders, AdminRequests, Dashboard,
+                                  PesananSaya (orders + custom requests)
+
+  [x] UI-2.2  Segmented Tab Control (Shared pattern)
+              DONE  : .segmented-tab-container + .segmented-tab-item CSS classes added.
+                      Adopted in: AdminOrders, AdminRequests, PesananSaya (filters),
+                                  Keuangan (year selector).
+                      Light mode override added in index.css.
+
+  [x] UI-2.3  Stat Cards — Layout Horizontal + Trend Badge
+              DONE  : icon w-11/12 rounded-2xl at RIGHT, value + label at LEFT.
+                      Trend badge wired (optional prop).
+                      Adopted in: Dashboard (6 cards), PesananSaya (stats bar),
+                                  Keuangan (4 summary cards).
+
+================================================================================
+  FASE 3 — HALAMAN ADMIN
+================================================================================
+
+  [x] UI-3.1  Dashboard.jsx
+              DONE  : overflow-hidden + shimmer span on quick action buttons
+                      (same group-hover:translate-x-full pattern as Sidebar).
+
+  [x] UI-3.2  AdminOrders.jsx
+              DONE  : order item wrapper → glass card-table p-5 (.card-table = border-radius 2rem).
+                      Deadline urgent border already in place.
+
+  [x] UI-3.3  AdminRequests.jsx
+              DONE  : segmented tabs + StatusBadge already adopted in Fase 2.
+
+  [x] UI-3.4  Keuangan.jsx
+              DONE  : year selector → segmented control + horizontal stat cards in Fase 2.
+
+  [x] UI-3.5  AdminSettings.jsx
+              DONE  : relative overflow-hidden + shimmer span on menu item buttons
+                      (consistent with Sidebar and Dashboard quick actions).
+
+================================================================================
+  FASE 4 — HALAMAN CLIENT
+================================================================================
+
+  [x] UI-4.1  PesananSaya.jsx
+              DONE  : segmented tabs + StatusBadge + horizontal stats in Fase 2.
+
+  [x] UI-4.2  OrderDetail.jsx
+              DONE  : StatusBadge for status_pekerjaan + status_pembayaran.
+                      Removed STATUS_MAP / BAYAR_MAP dead code.
+                      OrderTimeline: animate-ping ring on latest activity (idx=0).
+
+  [x] UI-4.3  Katalog.jsx
+              DONE  : ⌘K hint kbd pill in search input (hidden on mobile).
+                      Sort → segmented control (3 options).
+                      Service card: StatusBadge 'Tersedia' added (with new entry
+                      in StatusBadge BADGE_CONFIG).
+
+================================================================================
+  FASE 5 — CSS ADDITIONS (index.css)
+================================================================================
+
+  [x] UI-5.1  Tambah CSS ke src/index.css (TANPA menghapus yang ada):
+              - @font-face / font-family update → Plus Jakarta Sans  ✓ (Fase 1)
+              - .sidebar-shine     : shine-sweep animation untuk active nav item ✓ (Fase 1)
+              - .floating-nav      : styles island bottom nav (backdrop + rounded-3xl) ✓ (Fase 1)
+              - .segmented-tab     : base styles segmented control container  ✓ (Fase 2)
+              - .card-table        : rounded-[2rem] wrapper untuk tabel  ✓ (Fase 3)
+
+================================================================================
+  URUTAN IMPLEMENTASI (Priority Order)
+================================================================================
+
+  Urutan  Item        Deskripsi                          Impact        Effort
+  ------  ----------  ---------------------------------  ------------  --------
+  1       UI-1.1      Font update                        Semua halaman Sangat rendah
+  2       UI-2.1      StatusBadge component              Semua halaman Rendah
+  3       UI-1.4      BottomNav island floating          Mobile UX     Sedang
+  4       UI-2.2      Segmented tabs                     5 halaman     Sedang
+  5       UI-1.2      Sidebar admin (desktop)            Desktop admin Tinggi
+  6       UI-2.3      Stat cards horizontal + trend      3 halaman     Sedang
+  7       UI-3.2      Table rounded-[2rem] (admin)       Admin pages   Rendah
+  8       UI-5.1      CSS additions                      Global polish Rendah
+  9       UI-3.1      Dashboard quick action shimmer     Admin polish  Rendah
+  10      UI-1.3      cmd+K search hint (Navbar+Katalog) UX detail     Sangat rendah
+
+================================================================================
+  VERIFICATION CHECKLIST (sebelum commit setiap fase)
+================================================================================
+
+  [ ] Visual mobile 375px: sidebar tersembunyi, BottomNav island tampil
+  [ ] Visual desktop 1280px+: sidebar tampil, BottomNav tersembunyi
+  [ ] Semua nav links & badge counter masih berfungsi
+  [ ] Filter tabs di AdminOrders/PesananSaya masih filter dengan benar
+  [ ] Contrast ratio status badges ≥ 4.5:1 (WCAG AA)
+  [ ] env(safe-area-inset-bottom) di BottomNav tidak hilang
+  [ ] PWA standalone mode: layout tidak overlap dengan notch/home indicator
+  [ ] Light mode (data-theme=light): tidak ada elemen yang invisible
+
+================================================================================

@@ -72,8 +72,11 @@ export default function OrderTimeline({ orderId }) {
                                 <div key={act.id} className="flex gap-3">
                                     {/* Timeline line */}
                                     <div className="flex flex-col items-center">
-                                        <div className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 ${color}`}>
+                                        <div className={`relative w-8 h-8 rounded-full border flex items-center justify-center shrink-0 ${color}`}>
                                             <Icon className="w-3.5 h-3.5" />
+                                            {idx === 0 && (
+                                                <span aria-hidden="true" className="absolute -inset-1 rounded-full border border-current opacity-30 animate-ping" />
+                                            )}
                                         </div>
                                         {idx < activities.length - 1 && (
                                             <div className="w-px flex-1 bg-white/10 mt-1" />

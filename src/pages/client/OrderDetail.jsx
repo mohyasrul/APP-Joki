@@ -6,24 +6,13 @@ import { useToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import OrderChat from '../../components/OrderChat'
 import OrderTimeline from '../../components/OrderTimeline'
+import StatusBadge from '../../components/StatusBadge'
 import { formatRupiah } from '../../lib/utils'
 import { getFileIcon, formatSize } from '../../lib/constants'
 import {
-    ArrowLeft, Upload, CheckCircle, Clock, FileCheck, AlertCircle,
-    ImageIcon, XCircle, Loader2, Ban, Download, Star, RotateCcw, Tag, FileText, HelpCircle, X, Paperclip, Copy
+    ArrowLeft, Upload, FileCheck, AlertCircle,
+    ImageIcon, Loader2, Ban, Download, Star, RotateCcw, Tag, FileText, HelpCircle, X, Paperclip, Copy
 } from 'lucide-react'
-
-const STATUS_MAP = {
-    'Menunggu Diproses': { color: 'text-yellow-400 bg-yellow-500/10', icon: Clock },
-    'Sedang Dikerjakan': { color: 'text-blue-400 bg-blue-500/10', icon: Loader2 },
-    'Selesai': { color: 'text-green-400 bg-green-500/10', icon: CheckCircle },
-    'Batal': { color: 'text-red-400 bg-red-500/10', icon: XCircle },
-}
-const BAYAR_MAP = {
-    'Belum Bayar': { color: 'text-red-400 bg-red-500/10' },
-    'Menunggu Verifikasi': { color: 'text-yellow-400 bg-yellow-500/10' },
-    'Lunas': { color: 'text-green-400 bg-green-500/10' },
-}
 
 export default function OrderDetail() {
     const { id } = useParams()
@@ -166,9 +155,6 @@ export default function OrderDetail() {
     if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
     if (!order) return <div className="glass rounded-2xl p-12 text-center"><AlertCircle className="w-12 h-12 text-warning mx-auto mb-4" /><h3 className="text-lg font-medium text-white">Order tidak ditemukan</h3></div>
 
-    const statusInfo = STATUS_MAP[order.status_pekerjaan] || STATUS_MAP['Menunggu Diproses']
-    const bayarInfo = BAYAR_MAP[order.status_pembayaran] || BAYAR_MAP['Belum Bayar']
-    const StatusIcon = statusInfo.icon
     const canCancel = order.status_pekerjaan === 'Menunggu Diproses'
     const canRate = order.status_pekerjaan === 'Selesai' && !order.rating
     const canRevisi = order.status_pekerjaan === 'Selesai' && (order.jumlah_revisi || 0) < (order.max_revisi || 2) && !order.rating
@@ -223,9 +209,7 @@ export default function OrderDetail() {
                             <Copy className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </button>
                     </div>
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
-                        <StatusIcon className="w-3.5 h-3.5" /> {order.status_pekerjaan}
-                    </span>
+                    <StatusBadge status={order.status_pekerjaan} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
@@ -254,7 +238,7 @@ export default function OrderDetail() {
 
                 <div className="flex items-center justify-between p-3 rounded-xl bg-white/5">
                     <span className="text-sm text-slate-400">Status Pembayaran</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${bayarInfo.color}`}>{order.status_pembayaran}</span>
+                    <StatusBadge status={order.status_pembayaran} />
                 </div>
 
                 <div className="flex flex-col gap-2 mt-4">

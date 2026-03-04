@@ -440,8 +440,9 @@ export default function AdminSettings() {
                                 setActiveSection(item.key)
                                 if (item.key === 'promo') fetchPromos()
                             }}
-                            className="w-full glass rounded-2xl p-5 flex items-center gap-4 transition-all hover:bg-white/[0.03] group text-left"
+                            className="w-full relative overflow-hidden glass rounded-2xl p-5 flex items-center gap-4 transition-all hover:bg-white/[0.03] group text-left"
                         >
+                            <span aria-hidden="true" className="pointer-events-none absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/10 to-transparent group-hover:translate-x-full transition-transform duration-500" />
                             <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center shadow-lg shrink-0`}>
                                 <item.icon className="w-6 h-6 text-white" />
                             </div>

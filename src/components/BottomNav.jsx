@@ -34,18 +34,20 @@ export default function BottomNav() {
     return 0
   }
 
-  // Don't render on pages that shouldn't have bottom nav (e.g. order detail with its own actions)
-  // We keep it simple — always show on all authenticated pages
-
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-950/95 border-t border-white/10 backdrop-blur-sm"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+    <nav
+      className="floating-nav md:hidden fixed left-4 right-4 z-50 bg-slate-900/95 backdrop-blur-xl rounded-3xl border border-white/10 shadow-xl shadow-black/40"
+      style={{
+        bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
+      }}
+      aria-label="Navigasi utama"
     >
-      <div className="flex items-center justify-around h-16 px-1">
+      <div className="flex items-end justify-around h-16 px-2">
         {tabs.map((tab) => {
           const isActive = tab.to === '/'
             ? location.pathname === '/'
             : location.pathname === tab.to || location.pathname.startsWith(tab.to + '/')
+          const badge = getBadgeCount(tab.to)
 
           return (
             <NavLink
@@ -53,30 +55,38 @@ export default function BottomNav() {
               to={tab.to}
               end={tab.to === '/admin'}
               aria-current={isActive ? 'page' : undefined}
-              className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 transition-colors duration-200"
+              className="flex flex-col items-center justify-end flex-1 pb-2.5 gap-1 transition-all duration-200"
             >
-              <div className="relative">
-                <div className={`p-1.5 rounded-xl transition-all duration-200 ${isActive
-                  ? 'bg-primary/20 text-primary-light'
-                  : 'text-slate-500'
-                  }`}>
-                  <tab.icon className="w-5 h-5" />
+              {/* Icon container — active "pops up" above the island */}
+              <div className="relative flex flex-col items-center">
+                <div
+                  className={`relative flex items-center justify-center transition-all duration-300 ${
+                    isActive
+                      ? 'w-12 h-12 -mt-7 rounded-full bg-gradient-to-br from-primary to-purple-500 shadow-lg shadow-primary/40 border-[4px] border-[#0f0a2e]'
+                      : 'w-9 h-9 rounded-xl'
+                  }`}
+                >
+                  <tab.icon
+                    className={`transition-all duration-200 ${
+                      isActive ? 'w-5 h-5 text-white' : 'w-5 h-5 text-slate-500'
+                    }`}
+                  />
+                  {badge > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none z-10">
+                      {fmt(badge)}
+                    </span>
+                  )}
                 </div>
-                {getBadgeCount(tab.to) > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none z-10">
-                    {fmt(getBadgeCount(tab.to))}
-                  </span>
-                )}
               </div>
-              <span className={`text-[10px] font-medium transition-colors duration-200 ${isActive ? 'text-primary-light' : 'text-slate-500'
-                }`}>
+
+              {/* Label */}
+              <span
+                className={`text-[10px] font-semibold transition-colors duration-200 leading-none ${
+                  isActive ? 'text-primary-light' : 'text-slate-600'
+                }`}
+              >
                 {tab.label}
               </span>
-              {isActive && (
-                <div className="absolute bottom-0 w-8 h-0.5 rounded-full bg-primary-light" 
-                  style={{ bottom: 'env(safe-area-inset-bottom, 0px)' }}
-                />
-              )}
             </NavLink>
           )
         })}
@@ -84,3 +94,4 @@ export default function BottomNav() {
     </nav>
   )
 }
+

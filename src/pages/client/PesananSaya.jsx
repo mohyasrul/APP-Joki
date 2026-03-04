@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
 import { formatRupiah } from '../../lib/utils'
-import { STATUS_COLORS, BAYAR_COLORS } from '../../lib/constants'
+import StatusBadge from '../../components/StatusBadge'
 import { ShoppingCart, CheckCircle, XCircle, Eye, Package, Clock, Inbox, Star, AlertCircle, RefreshCw, Search, ArrowUpDown, TrendingUp } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
@@ -130,24 +130,44 @@ export default function PesananSaya() {
                 </div>
             </div>
 
-            {/* Stats Bar */}
+            {/* Stats Bar — horizontal layout with icon right */}
             {!loading && orders.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                    <button onClick={() => setFilter('Semua')} className="glass rounded-xl p-3 text-left hover:bg-white/[0.03] transition-all">
-                        <p className="text-xs text-slate-500 mb-0.5">Total Pesanan</p>
-                        <p className="text-xl font-bold text-white">{orders.length}</p>
+                    <button onClick={() => setFilter('Semua')} className="glass glow rounded-2xl p-4 text-left hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between gap-3">
+                        <div>
+                            <p className="text-[10px] text-slate-400 mb-1">Total Pesanan</p>
+                            <p className="text-xl font-bold text-white">{orders.length}</p>
+                        </div>
+                        <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+                            <ShoppingCart className="w-4 h-4 text-slate-400" />
+                        </div>
                     </button>
-                    <button onClick={() => setFilter('Sedang Dikerjakan')} className="glass rounded-xl p-3 text-left hover:bg-white/[0.03] transition-all">
-                        <p className="text-xs text-slate-500 mb-0.5">Aktif</p>
-                        <p className="text-xl font-bold text-blue-400">{statsData.aktif}</p>
+                    <button onClick={() => setFilter('Sedang Dikerjakan')} className="glass glow rounded-2xl p-4 text-left hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between gap-3">
+                        <div>
+                            <p className="text-[10px] text-slate-400 mb-1">Aktif</p>
+                            <p className="text-xl font-bold text-blue-400">{statsData.aktif}</p>
+                        </div>
+                        <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                            <Clock className="w-4 h-4 text-blue-400" />
+                        </div>
                     </button>
-                    <button onClick={() => setFilter('Selesai')} className="glass rounded-xl p-3 text-left hover:bg-white/[0.03] transition-all">
-                        <p className="text-xs text-slate-500 mb-0.5">Selesai</p>
-                        <p className="text-xl font-bold text-green-400">{statsData.selesai}</p>
+                    <button onClick={() => setFilter('Selesai')} className="glass glow rounded-2xl p-4 text-left hover:-translate-y-0.5 transition-all duration-200 flex items-start justify-between gap-3">
+                        <div>
+                            <p className="text-[10px] text-slate-400 mb-1">Selesai</p>
+                            <p className="text-xl font-bold text-green-400">{statsData.selesai}</p>
+                        </div>
+                        <div className="w-9 h-9 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
+                            <CheckCircle className="w-4 h-4 text-green-400" />
+                        </div>
                     </button>
-                    <div className="glass rounded-xl p-3">
-                        <p className="text-xs text-slate-500 mb-0.5">Total Pengeluaran</p>
-                        <p className="text-sm font-bold gradient-text">{formatRupiah(statsData.pengeluaran)}</p>
+                    <div className="glass glow rounded-2xl p-4 flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                            <p className="text-[10px] text-slate-400 mb-1">Total Pengeluaran</p>
+                            <p className="text-sm font-bold gradient-text truncate">{formatRupiah(statsData.pengeluaran)}</p>
+                        </div>
+                        <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                            <TrendingUp className="w-4 h-4 text-primary-light" />
+                        </div>
                     </div>
                 </div>
             )}
@@ -189,9 +209,7 @@ export default function PesananSaya() {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-0.5">
                                                 <p className="text-sm font-medium text-white truncate">{req.judul}</p>
-                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${s.color}`}>
-                                                    <ReqIcon className="w-3 h-3" /> {s.label}
-                                                </span>
+                                                <StatusBadge status={req.status} label={s.label} />
                                             </div>
                                             <p className="text-xs text-slate-500">{new Date(req.created_at).toLocaleDateString('id-ID')}</p>
                                             {req.harga_final && <p className="text-xs font-semibold gradient-text mt-0.5">{formatRupiah(req.harga_final)}</p>}
@@ -209,15 +227,17 @@ export default function PesananSaya() {
                 </div>
             )}
 
-            {/* Filters */}
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-                {filters.map(f => (
-                    <button key={f} onClick={() => setFilter(f)}
-                        aria-pressed={filter === f}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${filter === f ? 'bg-primary/20 text-primary-light border border-primary/30' : 'glass text-slate-400 hover:text-white'}`}>
-                        {f}
-                    </button>
-                ))}
+            {/* Filters — segmented control */}
+            <div className="mb-6 overflow-x-auto pb-1">
+                <div className="segmented-tab-container inline-flex">
+                    {filters.map(f => (
+                        <button key={f} onClick={() => setFilter(f)}
+                            aria-pressed={filter === f}
+                            className={`segmented-tab-item ${filter === f ? 'active' : ''}`}>
+                            {f}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Orders */}
@@ -253,8 +273,8 @@ export default function PesananSaya() {
                                 <Eye className="w-5 h-5 text-slate-600 group-hover:text-primary-light transition-colors shrink-0 ml-4" />
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${STATUS_COLORS[order.status_pekerjaan]}`}>{order.status_pekerjaan}</span>
-                                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${BAYAR_COLORS[order.status_pembayaran]}`}>{order.status_pembayaran}</span>
+                                <StatusBadge status={order.status_pekerjaan} />
+                                <StatusBadge status={order.status_pembayaran} />
                                 <span className="ml-auto text-sm font-bold gradient-text">{formatRupiah(order.harga_final)}</span>
                             </div>
                         </div>

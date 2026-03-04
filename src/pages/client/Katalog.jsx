@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { formatRupiah } from '../../lib/utils'
 import { ShoppingBag, Search, BookOpen, ArrowRight, Tag, Filter, AlertCircle, RefreshCw, Clock, SortAsc, X, Megaphone } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
+import StatusBadge from '../../components/StatusBadge'
 
 export default function Katalog() {
     const [layanan, setLayanan] = useState([])
@@ -91,15 +92,18 @@ export default function Katalog() {
                 <div className="relative w-full sm:w-72">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                     <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari tugas..."
-                        className="w-full pl-11 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all text-sm" />
+                        className="w-full pl-11 pr-16 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all text-sm" />
+                    <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-slate-500 text-[10px] font-sans select-none pointer-events-none">⌘K</kbd>
                 </div>
-                {/* Sort */}
-                <select value={sort} onChange={(e) => setSort(e.target.value)}
-                    className="px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-primary/50 cursor-pointer shrink-0">
-                    <option value="terbaru" className="bg-slate-800">Terbaru</option>
-                    <option value="harga_asc" className="bg-slate-800">Harga ↑</option>
-                    <option value="harga_desc" className="bg-slate-800">Harga ↓</option>
-                </select>
+                {/* Sort — segmented control */}
+                <div className="segmented-tab-container inline-flex shrink-0">
+                    {[{ value: 'terbaru', label: 'Terbaru' }, { value: 'harga_asc', label: 'Harga ↑' }, { value: 'harga_desc', label: 'Harga ↓' }].map(opt => (
+                        <button key={opt.value} onClick={() => setSort(opt.value)}
+                            className={`segmented-tab-item ${sort === opt.value ? 'active' : ''}`}>
+                            {opt.label}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Dynamic Category Filter */}
@@ -148,9 +152,12 @@ export default function Katalog() {
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center shrink-0">
                                     <BookOpen className="w-5 h-5 text-primary-light" />
                                 </div>
-                                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-medium">
-                                    <Tag className="w-3 h-3" /> {item.kategori || 'Lainnya'}
-                                </span>
+                                <div className="flex flex-col items-end gap-1.5">
+                                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-medium">
+                                        <Tag className="w-3 h-3" /> {item.kategori || 'Lainnya'}
+                                    </span>
+                                    <StatusBadge status="Tersedia" />
+                                </div>
                             </div>
                             <h3 className="text-lg font-semibold text-white mb-2">{item.judul_tugas}</h3>
                             <p className="text-sm text-slate-400 mb-4 line-clamp-2">{item.deskripsi || 'Tidak ada deskripsi'}</p>

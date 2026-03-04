@@ -115,11 +115,15 @@ export default function Keuangan() {
                     <p className="text-sm text-slate-400 mt-1">Ringkasan pemasukan dari joki tugas</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    {/* Year Selector */}
-                    <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}
-                        className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-primary/50 cursor-pointer">
-                        {YEAR_OPTIONS.map(y => <option key={y} value={y} className="bg-slate-800">{y}</option>)}
-                    </select>
+                    {/* Year Selector — segmented control (3 options) */}
+                    <div className="segmented-tab-container inline-flex">
+                        {YEAR_OPTIONS.map(y => (
+                            <button key={y} onClick={() => setSelectedYear(y)}
+                                className={`segmented-tab-item ${selectedYear === y ? 'active' : ''}`}>
+                                {y}
+                            </button>
+                        ))}
+                    </div>
                     <button onClick={exportCSV}
                         className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium text-sm hover:shadow-lg hover:shadow-green-500/25 transition-all flex items-center gap-2">
                         <Download className="w-4 h-4" /> Export CSV
@@ -127,26 +131,33 @@ export default function Keuangan() {
                 </div>
             </div>
 
-            {/* Summary Cards */}
+            {/* Summary Cards — horizontal icon-right layout */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {[
-                    { label: `Total ${selectedYear}`, value: total, icon: DollarSign, gradient: 'from-primary to-purple-500' },
-                    { label: 'Bulan Ini', value: monthTotal, icon: Calendar, gradient: 'from-blue-500 to-cyan-500' },
-                    { label: 'Minggu Ini', value: weekTotal, icon: TrendingUp, gradient: 'from-green-500 to-emerald-500' },
-                    { label: 'Growth vs Bulan Lalu', value: null, icon: TrendingUp, gradient: growth >= 0 ? 'from-green-500 to-emerald-500' : 'from-red-500 to-pink-500' },
+                    { label: `Total ${selectedYear}`, value: total, icon: DollarSign, gradient: 'from-primary to-purple-500', trend: growth !== 0 ? `${growth >= 0 ? '+' : ''}${growth}% vs lalu` : null, trendUp: growth >= 0 },
+                    { label: 'Bulan Ini', value: monthTotal, icon: Calendar, gradient: 'from-blue-500 to-cyan-500', trend: null },
+                    { label: 'Minggu Ini', value: weekTotal, icon: TrendingUp, gradient: 'from-green-500 to-emerald-500', trend: null },
+                    { label: 'Growth vs Bulan Lalu', value: null, growth, icon: TrendingUp, gradient: growth >= 0 ? 'from-green-500 to-emerald-500' : 'from-red-500 to-pink-500', trend: null },
                 ].map((card, i) => (
-                    <div key={i} className="glass rounded-2xl p-5 glow">
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center shadow-lg`}>
+                    <div key={i} className="glass glow rounded-2xl p-5 hover:-translate-y-0.5 transition-all duration-200">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs text-slate-400 mb-1.5">{card.label}</p>
+                                {card.value !== null && card.value !== undefined ? (
+                                    <p className="text-2xl font-bold gradient-text">{formatRupiah(card.value)}</p>
+                                ) : (
+                                    <p className={`text-2xl font-bold ${card.growth >= 0 ? 'text-green-400' : 'text-red-400'}`}>{card.growth >= 0 ? '+' : ''}{card.growth}%</p>
+                                )}
+                                {card.trend && (
+                                    <span className={`inline-flex items-center mt-1.5 text-xs font-semibold px-1.5 py-0.5 rounded ${
+                                        card.trendUp ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
+                                    }`}>{card.trend}</span>
+                                )}
+                            </div>
+                            <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br ${card.gradient} flex items-center justify-center shrink-0 shadow-lg`}>
                                 <card.icon className="w-5 h-5 text-white" />
                             </div>
-                            <span className="text-sm text-slate-400">{card.label}</span>
                         </div>
-                        {card.value !== null ? (
-                            <p className="text-2xl font-bold gradient-text">{formatRupiah(card.value)}</p>
-                        ) : (
-                            <p className={`text-2xl font-bold ${growth >= 0 ? 'text-green-400' : 'text-red-400'}`}>{growth >= 0 ? '+' : ''}{growth}%</p>
-                        )}
                     </div>
                 ))}
             </div>

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
   --color-primary: #6366f1;
   --color-primary-dark: #4f46e5;
   --color-primary-light: #818cf8;
@@ -176,6 +176,75 @@ input, select, textarea {
 }
 
 /* =============================================
+   Segmented Tab Control
+   ============================================= */
+.segmented-tab-container {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 2px;
+}
+.segmented-tab-item {
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #94a3b8;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  background: transparent;
+  border: none;
+}
+.segmented-tab-item:hover {
+  color: #f1f5f9;
+}
+.segmented-tab-item.active {
+  background: rgba(255, 255, 255, 0.10);
+  color: #f1f5f9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* =============================================
+   Island Floating BottomNav
+   ============================================= */
+.floating-nav {
+  /* Glassmorphism island */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* =============================================
+   Sidebar Shine Sweep
+   Used on nav items inside Sidebar
+   ============================================= */
+.sidebar-shine {
+  position: relative;
+  overflow: hidden;
+}
+.sidebar-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  transition: transform 0.5s ease;
+}
+.sidebar-shine:hover::after {
+  transform: translateX(100%);
+}
+
+/* =============================================
+   Card Table — rounded-[2rem] wrapper for order lists
+   Used in: AdminOrders order item cards
+   ============================================= */
+.card-table {
+  border-radius: 2rem;
+}
+
+/* =============================================
    Light Mode Theme
    Applied when <html data-theme="light">
    ============================================= */
@@ -237,8 +306,26 @@ input, select, textarea {
   color: #1e293b;
 }
 
-/* BottomNav */
-[data-theme="light"] nav.fixed.bottom-0 {
-  background: rgba(255, 255, 255, 0.95);
+/* BottomNav (island floating) */
+[data-theme="light"] .floating-nav {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(99, 102, 241, 0.20) !important;
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.12);
+}
+
+/* Segmented tabs — light mode */
+[data-theme="light"] .segmented-tab-container {
+  background: rgba(99, 102, 241, 0.06);
   border-color: rgba(99, 102, 241, 0.15);
+}
+[data-theme="light"] .segmented-tab-item {
+  color: #64748b;
+}
+[data-theme="light"] .segmented-tab-item:hover {
+  color: #1e293b;
+}
+[data-theme="light"] .segmented-tab-item.active {
+  background: rgba(99, 102, 241, 0.12);
+  color: #4f46e5;
+  box-shadow: 0 1px 3px rgba(99, 102, 241, 0.15);
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { formatRupiah } from '../../lib/utils'
+import StatusBadge from '../../components/StatusBadge'
 import {
     LayoutDashboard, DollarSign, Clock, AlertTriangle,
     TrendingUp, ArrowRight, CheckCircle, Package,
@@ -45,29 +46,21 @@ export default function AdminDashboard() {
     }
 
     const statCards = [
-        { label: 'Total Pemasukan', value: formatRupiah(stats.totalIncome), icon: DollarSign, gradient: 'from-green-500/20 to-emerald-500/20', iconColor: 'text-green-400' },
-        { label: 'Order Aktif', value: stats.activeOrders, icon: Clock, gradient: 'from-blue-500/20 to-cyan-500/20', iconColor: 'text-blue-400' },
-        { label: 'Menunggu Verifikasi', value: stats.pendingVerify, icon: AlertTriangle, gradient: 'from-yellow-500/20 to-orange-500/20', iconColor: 'text-yellow-400', pulse: stats.pendingVerify > 0 },
-        { label: 'Selesai', value: stats.completedOrders, icon: CheckCircle, gradient: 'from-primary/20 to-purple-500/20', iconColor: 'text-primary-light' },
-        { label: 'Custom Request', value: stats.pendingRequests, icon: Inbox, gradient: 'from-pink-500/20 to-rose-500/20', iconColor: 'text-pink-400', pulse: stats.pendingRequests > 0 },
-        { label: 'Avg Rating', value: stats.avgRating > 0 ? `⭐ ${stats.avgRating}` : '-', icon: Star, gradient: 'from-amber-500/20 to-yellow-500/20', iconColor: 'text-amber-400' },
+        { label: 'Total Pemasukan', value: formatRupiah(stats.totalIncome), icon: DollarSign, gradient: 'from-green-500/20 to-emerald-500/20', iconColor: 'text-green-400', trend: null },
+        { label: 'Order Aktif', value: stats.activeOrders, icon: Clock, gradient: 'from-blue-500/20 to-cyan-500/20', iconColor: 'text-blue-400', trend: null },
+        { label: 'Menunggu Verifikasi', value: stats.pendingVerify, icon: AlertTriangle, gradient: 'from-yellow-500/20 to-orange-500/20', iconColor: 'text-yellow-400', pulse: stats.pendingVerify > 0, trend: null },
+        { label: 'Selesai', value: stats.completedOrders, icon: CheckCircle, gradient: 'from-primary/20 to-purple-500/20', iconColor: 'text-primary-light', trend: null },
+        { label: 'Custom Request', value: stats.pendingRequests, icon: Inbox, gradient: 'from-pink-500/20 to-rose-500/20', iconColor: 'text-pink-400', pulse: stats.pendingRequests > 0, trend: null },
+        { label: 'Avg Rating', value: stats.avgRating > 0 ? `⭐ ${stats.avgRating}` : '-', icon: Star, gradient: 'from-amber-500/20 to-yellow-500/20', iconColor: 'text-amber-400', trend: null },
     ]
 
-    const quickActions = [
-        { label: 'Kelola Katalog', icon: BookOpen, to: '/admin/layanan', gradient: 'from-violet-500 to-purple-600' },
+    const quickActions = [        { label: 'Kelola Katalog', icon: BookOpen, to: '/admin/layanan', gradient: 'from-violet-500 to-purple-600' },
         { label: 'Kelola Orders', icon: ClipboardList, to: '/admin/orders', gradient: 'from-blue-500 to-cyan-600' },
         { label: 'Verifikasi Bayar', icon: CreditCard, to: '/admin/orders', gradient: 'from-yellow-500 to-orange-500', badge: stats.pendingVerify },
         { label: 'Custom Requests', icon: Inbox, to: '/admin/requests', gradient: 'from-pink-500 to-rose-600' },
         { label: 'Keuangan', icon: DollarSign, to: '/admin/keuangan', gradient: 'from-green-500 to-emerald-600' },
         { label: 'Pengaturan', icon: Settings, to: '/admin/settings', gradient: 'from-slate-500 to-slate-600' },
     ]
-
-    const STATUS_COLORS = {
-        'Menunggu Diproses': 'text-yellow-400 bg-yellow-500/10',
-        'Sedang Dikerjakan': 'text-blue-400 bg-blue-500/10',
-        'Selesai': 'text-green-400 bg-green-500/10',
-        'Batal': 'text-red-400 bg-red-500/10',
-    }
 
     return (
         <div className="fade-in">
@@ -80,18 +73,27 @@ export default function AdminDashboard() {
                 <p className="text-sm text-slate-400 mt-1">Selamat datang kembali, Admin!</p>
             </div>
 
-            {/* Stat Cards — 2-col on mobile, 3-col on desktop */}
+            {/* Stat Cards — horizontal layout: value left, icon right */}
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
                 {statCards.map((card, i) => (
-                    <div key={i} className="glass rounded-2xl p-4 sm:p-5 hover:-translate-y-0.5 transition-all duration-200">
-                        <div className="flex items-center justify-between mb-2 sm:mb-3">
-                            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center`}>
-                                <card.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${card.iconColor}`} />
+                    <div key={i} className="glass glow rounded-2xl p-4 sm:p-5 hover:-translate-y-1 transition-all duration-200">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] sm:text-xs text-slate-400 mb-1.5">{card.label}</p>
+                                <p className="text-xl sm:text-2xl font-bold text-white">{card.value}</p>
+                                {card.trend && (
+                                    <span className="inline-flex items-center mt-1.5 text-xs font-semibold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">
+                                        {card.trend}
+                                    </span>
+                                )}
                             </div>
-                            {card.pulse && <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 badge-pulse" />}
+                            <div className="relative shrink-0">
+                                <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br ${card.gradient} flex items-center justify-center`}>
+                                    <card.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${card.iconColor}`} />
+                                </div>
+                                {card.pulse && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-yellow-400 badge-pulse" />}
+                            </div>
                         </div>
-                        <p className="text-xl sm:text-2xl font-bold text-white">{card.value}</p>
-                        <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1">{card.label}</p>
                     </div>
                 ))}
             </div>
@@ -107,8 +109,9 @@ export default function AdminDashboard() {
                         <button
                             key={i}
                             onClick={() => navigate(action.to)}
-                            className="relative glass rounded-2xl p-3 sm:p-4 flex flex-col items-center gap-2 hover:bg-white/10 active:scale-95 transition-all duration-200 group"
+                            className="relative overflow-hidden glass rounded-2xl p-3 sm:p-4 flex flex-col items-center gap-2 hover:bg-white/10 active:scale-95 transition-all duration-200 group"
                         >
+                            <span aria-hidden="true" className="pointer-events-none absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/10 to-transparent group-hover:translate-x-full transition-transform duration-500" />
                             <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${action.gradient} flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow`}>
                                 <action.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                             </div>
@@ -165,9 +168,7 @@ export default function AdminDashboard() {
                                     </div>
                                 </div>
                                 <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-3 shrink-0">
-                                    <span className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[10px] sm:text-xs font-medium ${STATUS_COLORS[order.status_pekerjaan]}`}>
-                                        {order.status_pekerjaan}
-                                    </span>
+                                    <StatusBadge status={order.status_pekerjaan} />
                                     <span className="text-xs sm:text-sm font-semibold text-white">{formatRupiah(order.harga_final)}</span>
                                 </div>
                             </div>

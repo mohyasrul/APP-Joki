@@ -5,12 +5,8 @@ import Modal from '../../components/Modal'
 import { formatRupiah } from '../../lib/utils'
 import { Inbox, CheckCircle, XCircle, X, Loader2, Clock, DollarSign, Calendar, FileText, User, Search, Paperclip } from 'lucide-react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
+import StatusBadge from '../../components/StatusBadge'
 
-const STATUS_COLORS = {
-    pending: 'text-yellow-400 bg-yellow-500/10',
-    accepted: 'text-green-400 bg-green-500/10',
-    rejected: 'text-red-400 bg-red-500/10',
-}
 const STATUS_LABEL = { pending: 'Menunggu', accepted: 'Diterima', rejected: 'Ditolak' }
 
 export default function AdminRequests() {
@@ -145,19 +141,19 @@ export default function AdminRequests() {
                 </div>
             </div>
 
-            {/* Status Tabs */}
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-                {['Semua', 'Menunggu', 'Diterima', 'Ditolak'].map(tab => (
-                    <button key={tab} onClick={() => { setStatusFilter(tab); setCurrentPage(1) }}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                            statusFilter === tab ? 'bg-primary/20 text-primary-light border border-primary/30' : 'glass text-slate-400 hover:text-white'
-                        }`}>
-                        {tab}
-                        {tab === 'Menunggu' && pendingCount > 0 && (
-                            <span className="w-5 h-5 rounded-full bg-yellow-500 text-black text-xs flex items-center justify-center font-bold badge-pulse">{pendingCount}</span>
-                        )}
-                    </button>
-                ))}
+            {/* Status Tabs — segmented control */}
+            <div className="mb-6 overflow-x-auto pb-1">
+                <div className="segmented-tab-container inline-flex">
+                    {['Semua', 'Menunggu', 'Diterima', 'Ditolak'].map(tab => (
+                        <button key={tab} onClick={() => { setStatusFilter(tab); setCurrentPage(1) }}
+                            className={`segmented-tab-item flex items-center gap-1.5 ${statusFilter === tab ? 'active' : ''}`}>
+                            {tab}
+                            {tab === 'Menunggu' && pendingCount > 0 && (
+                                <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-yellow-500 text-black text-[10px] flex items-center justify-center font-bold badge-pulse leading-none">{pendingCount}</span>
+                            )}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {loading ? (
@@ -175,9 +171,7 @@ export default function AdminRequests() {
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                         <h3 className="text-base font-semibold text-white truncate">{req.judul}</h3>
-                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[req.status]}`}>
-                                            {STATUS_LABEL[req.status]}
-                                        </span>
+                                        <StatusBadge status={req.status} label={STATUS_LABEL[req.status]} />
                                     </div>
                                     <p className="text-sm text-slate-400 flex items-center gap-1">
                                         <User className="w-3.5 h-3.5" /> {req.profiles?.full_name} • {new Date(req.created_at).toLocaleDateString('id-ID')}
