@@ -7,10 +7,10 @@ import { formatRupiah } from '../../lib/utils'
 import { getFileIcon, formatSize } from '../../lib/constants'
 import StatusBadge from '../../components/StatusBadge'
 import {
-    ClipboardList, Search, CheckCircle, XCircle, X, Image as ImageIcon,
-    Loader2, AlertTriangle, Upload, Star, FileText, Download, ExternalLink, Eye, FileDown, MessageCircle,
-    StickyNote, Paperclip, Filter, Clock
-} from 'lucide-react'
+    ClipboardText, MagnifyingGlass, CheckCircle, XCircle, X, Image as ImageIcon,
+    SpinnerGap, Warning, UploadSimple, Star, FileText, DownloadSimple, Eye,
+    ChatCircle, Note, Paperclip, Funnel, Clock, ArrowsDownUp, SortDescending
+} from '@phosphor-icons/react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 const STATUS_PEKERJAAN = ['Menunggu Diproses', 'Sedang Dikerjakan', 'Selesai', 'Batal']
@@ -27,6 +27,7 @@ export default function AdminOrders() {
     const [showBukti, setShowBukti] = useState(null)
     const toast = useToast()
     const searchTimer = useRef(null)
+    const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE)
 
     // Upload hasil modal
     const [uploadModal, setUploadModal] = useState(null)
@@ -57,7 +58,6 @@ export default function AdminOrders() {
         try {
             setLoading(true)
 
-            // Get total order count + pending verify count (lightweight)
             const [{ count: allCount }, { count: pvCount }] = await Promise.all([
                 supabase.from('orders').select('id', { count: 'exact', head: true }),
                 supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status_pembayaran', 'Menunggu Verifikasi'),
@@ -66,18 +66,16 @@ export default function AdminOrders() {
             setPendingVerifyCount(pvCount || 0)
 
             if (searchTerm.trim()) {
-                // Server-side search via RPC (ILIKE across joined tables)
                 const { data, error } = await supabase.rpc('search_orders', {
                     p_term: searchTerm.trim(),
                     p_status: statusFilter,
-                    p_limit: ITEMS_PER_PAGE,
-                    p_offset: (page - 1) * ITEMS_PER_PAGE
+                    p_limit: itemsPerPage,
+                    p_offset: (page - 1) * itemsPerPage
                 })
                 if (error) throw error
                 setOrders(data?.data || [])
                 setTotalCount(data?.count || 0)
             } else {
-                // Regular PostgREST query with server-side pagination
                 let query = supabase
                     .from('orders')
                     .select('*, layanan(judul_tugas), profiles(full_name, phone)', { count: 'exact' })
@@ -92,8 +90,8 @@ export default function AdminOrders() {
                 if (dateFrom) query = query.gte('created_at', dateFrom)
                 if (dateTo) query = query.lte('created_at', dateTo + 'T23:59:59')
 
-                const from = (page - 1) * ITEMS_PER_PAGE
-                const to = from + ITEMS_PER_PAGE - 1
+                const from = (page - 1) * itemsPerPage
+                const to = from + itemsPerPage - 1
                 query = query.range(from, to)
 
                 const { data, error, count } = await query
@@ -107,7 +105,7 @@ export default function AdminOrders() {
         } finally {
             setLoading(false)
         }
-    }, [currentPage, filter, search])
+    }, [currentPage, filter, search, itemsPerPage])
 
     useEffect(() => {
         fetchOrders()
@@ -125,10 +123,8 @@ export default function AdminOrders() {
         return () => { supabase.removeChannel(channel) }
     }, [])
 
-    // Refetch when filter or page changes
-    useEffect(() => { fetchOrders(currentPage, filter, search) }, [filter, currentPage, dateFrom, dateTo])
+    useEffect(() => { fetchOrders(currentPage, filter, search) }, [filter, currentPage, dateFrom, dateTo, itemsPerPage])
 
-    // Debounced search
     useEffect(() => {
         if (searchTimer.current) clearTimeout(searchTimer.current)
         searchTimer.current = setTimeout(() => {
@@ -139,9 +135,13 @@ export default function AdminOrders() {
     }, [search])
 
     const handleVerifikasi = async (orderId, accept) => {
-        const { error } = await supabase.from('orders').update({ status_pembayaran: accept ? 'Lunas' : 'Belum Bayar', ...(accept ? {} : { bukti_transfer_url: null }) }).eq('id', orderId)
+        const updateData = accept
+            ? { status_pembayaran: 'Lunas', status_pekerjaan: 'Sedang Dikerjakan' }
+            : { status_pembayaran: 'Belum Bayar', bukti_transfer_url: null }
+
+        const { error } = await supabase.from('orders').update(updateData).eq('id', orderId)
         if (error) { toast.error('Gagal verifikasi: ' + error.message); return }
-        toast.success(accept ? 'Pembayaran diterima ✅' : 'Pembayaran ditolak')
+        toast.success(accept ? 'Pembayaran diterima & Order mulai dikerjakan ✅' : 'Pembayaran ditolak')
         fetchOrders(); setShowBukti(null)
     }
 
@@ -152,14 +152,12 @@ export default function AdminOrders() {
         fetchOrders()
     }
 
-    // Open upload modal
     const openUploadModal = (order) => {
         setUploadModal(order)
         setUploadFiles([])
         setUploadNote(order.catatan_hasil || '')
     }
 
-    // Handle multi-file upload
     const handleUploadHasil = async () => {
         setUploading(true)
         try {
@@ -190,7 +188,6 @@ export default function AdminOrders() {
         finally { setUploading(false) }
     }
 
-    // Save note only
     const handleSaveNote = async () => {
         await supabase.from('orders').update({ catatan_hasil: uploadNote || null }).eq('id', uploadModal.id)
         toast.success('Catatan tersimpan')
@@ -199,7 +196,6 @@ export default function AdminOrders() {
     }
 
     const isDeadlineSoon = (d) => { if (!d) return false; const diff = new Date(d) - new Date(); return diff > 0 && diff < 86400000 * 3 }
-    const isUrgent = (d) => { if (!d) return false; const diff = new Date(d) - new Date(); return diff > 0 && diff < 86400000 }
     const isOverdue = (d) => d && new Date(d) < new Date()
 
     const getDaysLeft = (d) => {
@@ -272,193 +268,260 @@ export default function AdminOrders() {
 
     return (
         <div className="fade-in">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <ClipboardList className="w-7 h-7 text-primary-light" /> Manajemen Order
-                    </h1>
-                    <p className="text-sm text-slate-400 mt-1">{totalOrderCount} total order</p>
-                </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:w-72">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                        <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari klien / tugas..."
-                            className="w-full pl-11 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all text-sm" />
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-6">
+                {/* Section Header */}
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                    <h2 className="text-lg font-bold">Daftar Pesanan Tugas</h2>
+                    <div className="flex items-center gap-3 shrink-0">
+                        <button onClick={() => setShowDateFilter(!showDateFilter)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors shadow-sm ${showDateFilter ? 'bg-brand-50 text-brand-600 border border-brand-100' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                            <Funnel weight="bold" className="w-4 h-4" /> Filter
+                        </button>
+                        <button onClick={exportCSV}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-50 text-brand-600 font-medium text-sm hover:bg-brand-100 transition-colors shadow-sm border border-brand-100">
+                            <DownloadSimple className="w-4 h-4" /> Unduh CSV
+                        </button>
                     </div>
-                    <button onClick={exportCSV} title="Export CSV"
-                        className="p-2.5 rounded-xl glass text-slate-400 hover:text-white hover:bg-white/10 transition-all shrink-0">
-                        <FileDown className="w-5 h-5" />
-                    </button>
-                    <button onClick={() => setShowDateFilter(!showDateFilter)} title="Filter Tanggal"
-                        className={`p-2.5 rounded-xl transition-all shrink-0 ${showDateFilter ? 'bg-primary/20 text-primary-light' : 'glass text-slate-400 hover:text-white hover:bg-white/10'}`}>
-                        <Filter className="w-5 h-5" />
-                    </button>
                 </div>
-            </div>
 
-            {/* Date range filter */}
-            {showDateFilter && (
-                <div className="glass rounded-2xl p-4 mb-4 flex flex-wrap items-center gap-3">
-                    <span className="text-sm text-slate-400">Dari:</span>
-                    <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1) }}
-                        className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-primary/50" />
-                    <span className="text-sm text-slate-400">Sampai:</span>
-                    <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setCurrentPage(1) }}
-                        className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-primary/50" />
-                    {(dateFrom || dateTo) && (
-                        <button onClick={() => { setDateFrom(''); setDateTo('') }} className="text-xs text-red-400 hover:text-red-300 transition-colors">
-                            Reset
+                {/* Date range filter */}
+                {showDateFilter && (
+                    <div className="bg-slate-50 rounded-xl p-4 mb-6 flex flex-wrap items-center gap-3">
+                        <span className="text-sm text-slate-500">Dari:</span>
+                        <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1) }}
+                            className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-sm focus:outline-none focus:border-brand-300" />
+                        <span className="text-sm text-slate-500">Sampai:</span>
+                        <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setCurrentPage(1) }}
+                            className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-sm focus:outline-none focus:border-brand-300" />
+                        {(dateFrom || dateTo) && (
+                            <button onClick={() => { setDateFrom(''); setDateTo('') }} className="text-xs text-red-500 hover:text-red-600 transition-colors font-medium">
+                                Reset
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {/* Tabs & Filters */}
+                <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+                    <div className="flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        {filters.map(f => (
+                            <button key={f} onClick={() => { setFilter(f); setCurrentPage(1) }}
+                                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${filter === f ? 'bg-brand-50 text-brand-600' : 'text-slate-500 hover:bg-slate-50'}`}>
+                                {f === 'Menunggu Verifikasi' && <Warning weight="bold" className="w-3 h-3 inline mr-1" />}
+                                {f}
+                                {f === 'Menunggu Verifikasi' && pendingVerifyCount > 0 && (
+                                    <span className="ml-1 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] inline-flex items-center justify-center font-bold leading-none">
+                                        {pendingVerifyCount}
+                                    </span>
+                                )}
+                                {f === 'Semua' && <span className="ml-1 text-slate-400">({totalCount})</span>}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="relative w-full md:w-64">
+                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari ID atau judul..."
+                                className="w-full bg-slate-50 border border-slate-100 rounded-full py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-brand-100 outline-none" />
+                        </div>
+                        <button className="p-2 rounded-full bg-slate-50 text-slate-600 hover:bg-slate-100">
+                            <SortDescending className="w-4 h-4" />
                         </button>
-                    )}
+                    </div>
                 </div>
-            )}
 
-            {/* Filters — segmented control */}
-            <div className="mb-6 overflow-x-auto pb-1">
-                <div className="segmented-tab-container inline-flex">
-                    {filters.map(f => (
-                        <button key={f} onClick={() => setFilter(f)}
-                            className={`segmented-tab-item flex items-center gap-1.5 ${filter === f ? 'active' : ''}`}>
-                            {f === 'Menunggu Verifikasi' && <AlertTriangle className="w-3 h-3" />}
-                            {f}
-                            {f === 'Menunggu Verifikasi' && pendingVerifyCount > 0 && (
-                                <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-yellow-500 text-black text-[10px] flex items-center justify-center font-bold badge-pulse leading-none">
-                                    {pendingVerifyCount}
-                                </span>
-                            )}
-                        </button>
-                    ))}
-                </div>
-            </div>
+                {/* Orders Table */}
+                {loading ? (
+                    <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-16 rounded-lg bg-slate-50 animate-pulse" />)}</div>
+                ) : orders.length === 0 ? (
+                    <div className="py-12 text-center">
+                        <ClipboardText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-slate-500">Tidak ada order</h3>
+                    </div>
+                ) : (
+                    <>
+                        <div className="overflow-x-auto hidden md:block">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="text-slate-400 text-xs font-medium border-b border-slate-100">
+                                        <th className="pb-3 px-2 font-normal">ID Tugas <ArrowsDownUp className="w-3 h-3 ml-1 inline-block" /></th>
+                                        <th className="pb-3 px-2 font-normal">Layanan / Jenis <ArrowsDownUp className="w-3 h-3 ml-1 inline-block" /></th>
+                                        <th className="pb-3 px-2 font-normal">Klien</th>
+                                        <th className="pb-3 px-2 font-normal">Deadline <ArrowsDownUp className="w-3 h-3 ml-1 inline-block" /></th>
+                                        <th className="pb-3 px-2 font-normal">Harga (Rp) <ArrowsDownUp className="w-3 h-3 ml-1 inline-block" /></th>
+                                        <th className="pb-3 px-2 font-normal">Pembayaran</th>
+                                        <th className="pb-3 px-2 font-normal">Status</th>
+                                        <th className="pb-3 px-2 font-normal">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-sm">
+                                    {orders.map(order => {
+                                        const hasHasil = (order.hasil_files?.length > 0) || order.hasil_url || order.catatan_hasil
+                                        const deadlineClass = isOverdue(order.tenggat_waktu) && !['Selesai', 'Batal'].includes(order.status_pekerjaan) ? 'text-red-500 font-medium' :
+                                            isDeadlineSoon(order.tenggat_waktu) && !['Selesai', 'Batal'].includes(order.status_pekerjaan) ? 'text-amber-500' : 'text-slate-500'
+                                        const paymentClass = order.status_pembayaran === 'Lunas' ? 'text-emerald-500' :
+                                            order.status_pembayaran === 'Menunggu Verifikasi' ? 'text-amber-500' :
+                                                order.status_pembayaran === 'Belum Bayar' ? 'text-red-400' : 'text-slate-500'
+                                        return (
+                                            <tr key={order.id} className="group hover:bg-slate-50/50 transition-colors border-b border-slate-50 last:border-0">
+                                                <td className="py-4 px-2 font-medium text-slate-700 whitespace-nowrap">#{order.id.substring(0, 6).toUpperCase()}</td>
+                                                <td className="py-4 px-2">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-base shrink-0">📋</div>
+                                                        <div className="min-w-0">
+                                                            <span className="font-medium block truncate max-w-[200px]">{order.layanan?.judul_tugas || '-'}</span>
+                                                            {order.detail_tambahan && <span className="text-xs text-slate-400 block truncate max-w-[200px]">{order.detail_tambahan}</span>}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-4 px-2 text-slate-600 whitespace-nowrap">{order.profiles?.full_name || '-'}</td>
+                                                <td className="py-4 px-2 whitespace-nowrap">
+                                                    <span className={deadlineClass}>
+                                                        {order.tenggat_waktu ? new Date(order.tenggat_waktu).toLocaleDateString('id-ID') : '-'}
+                                                    </span>
+                                                    {order.tenggat_waktu && !['Selesai', 'Batal'].includes(order.status_pekerjaan) && (
+                                                        <span className={`block text-[10px] ${deadlineClass}`}>{getDaysLeft(order.tenggat_waktu)}</span>
+                                                    )}
+                                                </td>
+                                                <td className="py-4 px-2 font-medium whitespace-nowrap">{formatRupiah(order.harga_final)}</td>
+                                                <td className="py-4 px-2 whitespace-nowrap"><span className={`font-medium ${paymentClass}`}>{order.status_pembayaran}</span></td>
+                                                <td className="py-4 px-2"><StatusBadge status={order.status_pekerjaan} /></td>
+                                                <td className="py-4 px-2">
+                                                    <div className="flex items-center gap-0.5">
+                                                        {order.bukti_transfer_url && (
+                                                            <button onClick={() => setShowBukti(order)} className="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-all" title="Bukti Bayar">
+                                                                <ImageIcon weight="bold" className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        )}
+                                                        {hasHasil && (
+                                                            <button onClick={() => setViewHasil(order)} className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all" title="Lihat Hasil">
+                                                                <Eye weight="bold" className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        )}
+                                                        {order.status_pekerjaan !== 'Batal' && order.status_pembayaran === 'Lunas' && (
+                                                            <button onClick={() => openUploadModal(order)} className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all" title="Upload Hasil">
+                                                                <UploadSimple weight="bold" className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        )}
+                                                        <button onClick={() => setChatOrder(order)} className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-all" title="Chat">
+                                                            <ChatCircle weight="bold" className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button onClick={() => { setCatatanModal(order); setCatatanText(order.catatan_internal || '') }}
+                                                            className={`p-1.5 rounded-lg transition-all ${order.catatan_internal ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'}`}
+                                                            title="Catatan Internal">
+                                                            <Note weight={order.catatan_internal ? 'fill' : 'bold'} className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        {order.order_files?.length > 0 && (
+                                                            <button onClick={() => setViewOrderFiles(order)} className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all" title="Lampiran Klien">
+                                                                <Paperclip weight="bold" className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        )}
+                                                        {!['Selesai', 'Batal'].includes(order.status_pekerjaan) && (
+                                                            <select value={order.status_pekerjaan} onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
+                                                                className="ml-1 px-2 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 focus:outline-none focus:border-brand-300 cursor-pointer">
+                                                                {STATUS_PEKERJAAN.map(s => <option key={s} value={s}>{s}</option>)}
+                                                            </select>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
 
-            {/* Orders List */}
-            {loading ? (
-                <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="glass rounded-2xl p-5 h-20 animate-pulse" />)}</div>
-            ) : orders.length === 0 ? (
-                <div className="glass rounded-2xl p-12 text-center">
-                    <ClipboardList className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-slate-300">Tidak ada order</h3>
-                </div>
-            ) : (
-                <div className="space-y-3">
-                    {orders.map(order => {
-                        const hasHasil = (order.hasil_files?.length > 0) || order.hasil_url || order.catatan_hasil
-                        return (
-                            <div key={order.id} className={`glass card-table p-5 transition-all hover:bg-white/[0.03] ${isOverdue(order.tenggat_waktu) && !['Selesai', 'Batal'].includes(order.status_pekerjaan) ? 'border border-red-500/30' :
-                                isDeadlineSoon(order.tenggat_waktu) && !['Selesai', 'Batal'].includes(order.status_pekerjaan) ? 'border border-yellow-500/30' : ''
-                                }`}>
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-0.5">
-                                            <h3 className="text-base font-semibold text-white truncate">{order.layanan?.judul_tugas}</h3>
-                                            {order.rating && <span className="flex items-center gap-0.5 text-xs text-yellow-400"><Star className="w-3 h-3 fill-yellow-400" />{order.rating}</span>}
+                        {/* Mobile card view */}
+                        <div className="md:hidden space-y-3">
+                            {orders.map(order => {
+                                const deadlineClass = isOverdue(order.tenggat_waktu) && !['Selesai', 'Batal'].includes(order.status_pekerjaan) ? 'text-red-500 font-medium' :
+                                    isDeadlineSoon(order.tenggat_waktu) && !['Selesai', 'Batal'].includes(order.status_pekerjaan) ? 'text-amber-500' : 'text-slate-500'
+                                const paymentClass = order.status_pembayaran === 'Lunas' ? 'text-emerald-500' :
+                                    order.status_pembayaran === 'Menunggu Verifikasi' ? 'text-amber-500' :
+                                        order.status_pembayaran === 'Belum Bayar' ? 'text-red-400' : 'text-slate-500'
+                                return (
+                                    <div key={order.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+                                        {/* Row 1: Service + status */}
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <p className="font-semibold text-slate-800 truncate">{order.layanan?.judul_tugas || '-'}</p>
+                                                <p className="text-xs text-slate-400 mt-0.5">#{order.id.substring(0, 6).toUpperCase()}</p>
+                                            </div>
+                                            <StatusBadge status={order.status_pekerjaan} />
                                         </div>
-                                        <p className="text-sm text-slate-400">
-                                            👤 {order.profiles?.full_name} • {new Date(order.created_at).toLocaleDateString('id-ID')}
-                                            {order.tenggat_waktu && (
-                                                <span className={isOverdue(order.tenggat_waktu) ? ' text-red-400' : isDeadlineSoon(order.tenggat_waktu) ? ' text-yellow-400' : ''}>
-                                                    {' '}• 📅 {new Date(order.tenggat_waktu).toLocaleDateString('id-ID')}
-                                                    {isOverdue(order.tenggat_waktu) && !['Selesai', 'Batal'].includes(order.status_pekerjaan) && ' ⚠️ TERLAMBAT'}
-                                                    {isDeadlineSoon(order.tenggat_waktu) && !['Selesai', 'Batal'].includes(order.status_pekerjaan) && ' ⚠️ H-1'}
-                                                </span>
-                                            )}
-                                        </p>
-                                        {order.detail_tambahan && <p className="text-xs text-slate-500 mt-1 truncate">📝 {order.detail_tambahan}</p>}
-                                        {order.jumlah_revisi > 0 && <p className="text-xs text-blue-400 mt-0.5">🔄 Revisi ke-{order.jumlah_revisi}</p>}
-                                        {hasHasil && <p className="text-xs text-green-400 mt-0.5">✅ Hasil: {order.hasil_files?.length || 1} file</p>}
-                                        {order.review && <p className="text-xs text-yellow-400/70 mt-0.5 truncate">💬 "{order.review}"</p>}
-                                        <div className="flex items-center gap-3 mt-1">
-                                            {order.order_files?.length > 0 && (
-                                                <button onClick={() => setViewOrderFiles(order)} className="flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 transition-colors">
-                                                    <Paperclip className="w-3 h-3" /> {order.order_files.length} lampiran klien
-                                                </button>
-                                            )}
-                                            {order.catatan_internal && (
-                                                <span className="flex items-center gap-1 text-xs text-amber-400">
-                                                    <StickyNote className="w-3 h-3" /> Ada catatan internal
-                                                </span>
-                                            )}
-                                            {order.tenggat_waktu && !['Selesai', 'Batal'].includes(order.status_pekerjaan) && (
-                                                <span className={`flex items-center gap-1 text-xs font-medium ${
-                                                    isOverdue(order.tenggat_waktu) ? 'text-red-400' :
-                                                    isUrgent(order.tenggat_waktu) ? 'text-orange-400' :
-                                                    isDeadlineSoon(order.tenggat_waktu) ? 'text-yellow-400' : 'text-slate-500'
-                                                }`}>
-                                                    <Clock className="w-3 h-3" /> {getDaysLeft(order.tenggat_waktu)}
-                                                </span>
-                                            )}
+                                        {/* Row 2: Client */}
+                                        <p className="text-sm text-slate-500">{order.profiles?.full_name || '-'}</p>
+                                        {/* Row 3: Price + payment */}
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-bold text-brand-600">{formatRupiah(order.harga_final)}</span>
+                                            <span className={`text-xs font-medium ${paymentClass}`}>{order.status_pembayaran}</span>
                                         </div>
-                                    </div>
-
-                                    <div className="flex flex-wrap items-center gap-2 shrink-0">
-                                        <StatusBadge status={order.status_pekerjaan} />
-                                        <StatusBadge status={order.status_pembayaran} />
-                                        <span className="text-sm font-bold gradient-text">{formatRupiah(order.harga_final)}</span>
-
-                                        {order.bukti_transfer_url && (
-                                            <button onClick={() => setShowBukti(order)} className="p-2 rounded-lg text-slate-400 hover:text-primary-light hover:bg-primary/10 transition-all" title="Lihat Bukti Bayar">
-                                                <ImageIcon className="w-4 h-4" />
-                                            </button>
+                                        {/* Row 4: Deadline */}
+                                        {order.tenggat_waktu && (
+                                            <p className={`text-xs ${deadlineClass}`}>
+                                                Deadline: {new Date(order.tenggat_waktu).toLocaleDateString('id-ID')}
+                                                {!['Selesai', 'Batal'].includes(order.status_pekerjaan) && (
+                                                    <span className="ml-1">({getDaysLeft(order.tenggat_waktu)})</span>
+                                                )}
+                                            </p>
                                         )}
-
-                                        {/* View Hasil */}
-                                        {hasHasil && (
-                                            <button onClick={() => setViewHasil(order)} className="p-2 rounded-lg text-slate-400 hover:text-green-400 hover:bg-green-500/10 transition-all" title="Lihat Hasil">
-                                                <Eye className="w-4 h-4" />
-                                            </button>
-                                        )}
-
-                                        {/* Upload Hasil */}
-                                        {order.status_pekerjaan !== 'Batal' && (
-                                            <button onClick={() => openUploadModal(order)} className="p-2 rounded-lg text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 transition-all" title="Upload Hasil Tugas">
-                                                <Upload className="w-4 h-4" />
-                                            </button>
-                                        )}
-
-                                        {/* Chat (#33) */}
-                                        <button onClick={() => setChatOrder(order)} className="p-2 rounded-lg text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-all" title="Diskusi dengan Klien">
-                                            <MessageCircle className="w-4 h-4" />
-                                        </button>
-
-                                        {/* Catatan Internal */}
-                                        <button onClick={() => { setCatatanModal(order); setCatatanText(order.catatan_internal || '') }}
-                                            className={`p-2 rounded-lg transition-all ${order.catatan_internal ? 'text-amber-400 hover:bg-amber-500/10' : 'text-slate-400 hover:text-amber-400 hover:bg-amber-500/10'}`}
-                                            title="Catatan Internal">
-                                            <StickyNote className="w-4 h-4" />
-                                        </button>
-
+                                        {/* Row 5: Action select */}
                                         {!['Selesai', 'Batal'].includes(order.status_pekerjaan) && (
                                             <select value={order.status_pekerjaan} onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
-                                                className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:border-primary/50 cursor-pointer">
-                                                {STATUS_PEKERJAAN.map(s => <option key={s} value={s} className="bg-slate-800">{s}</option>)}
+                                                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-700 focus:outline-none focus:border-brand-300 cursor-pointer">
+                                                {STATUS_PEKERJAAN.map(s => <option key={s} value={s}>{s}</option>)}
                                             </select>
                                         )}
+                                        {/* Row 6: Icon actions */}
+                                        <div className="flex items-center gap-1 pt-1 border-t border-slate-50">
+                                            {order.bukti_transfer_url && (
+                                                <button onClick={() => setShowBukti(order)} className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-all" title="Bukti Bayar">
+                                                    <ImageIcon weight="bold" className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            {((order.hasil_files?.length > 0) || order.hasil_url || order.catatan_hasil) && (
+                                                <button onClick={() => setViewHasil(order)} className="p-2 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all" title="Lihat Hasil">
+                                                    <Eye weight="bold" className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            {order.status_pekerjaan !== 'Batal' && (
+                                                <button onClick={() => openUploadModal(order)} className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all" title="Upload Hasil">
+                                                    <UploadSimple weight="bold" className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            <button onClick={() => setChatOrder(order)} className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-all" title="Chat">
+                                                <ChatCircle weight="bold" className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={() => { setCatatanModal(order); setCatatanText(order.catatan_internal || '') }}
+                                                className={`p-2 rounded-lg transition-all ${order.catatan_internal ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'}`}
+                                                title="Catatan Internal">
+                                                <Note weight={order.catatan_internal ? 'fill' : 'bold'} className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        )
-                    })}
-                </div>
-            )}
+                                )
+                            })}
+                        </div>
+                    </>
+                )}
 
-            {totalCount > ITEMS_PER_PAGE && (
-                <Pagination currentPage={currentPage} totalItems={totalCount} onPageChange={setCurrentPage} />
-            )}
+                <Pagination currentPage={currentPage} totalItems={totalCount} itemsPerPage={itemsPerPage} onPageChange={setCurrentPage} onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1) }} />
+            </div>
 
             {/* Bukti Transfer Modal */}
             <Modal open={!!showBukti} onClose={() => setShowBukti(null)} title="Bukti Transfer" maxWidth="max-w-lg">
                 {showBukti && (
                     <>
-                        <p className="text-sm text-slate-400 mb-1">{showBukti.profiles?.full_name} — {showBukti.layanan?.judul_tugas}</p>
-                        <p className="text-lg font-bold gradient-text mb-4">{formatRupiah(showBukti.harga_final)}</p>
-                        <img src={showBukti.bukti_transfer_url} alt="Bukti" className="w-full max-h-80 object-contain rounded-xl bg-black/20 mb-4" />
+                        <p className="text-sm text-slate-500 mb-1">{showBukti.profiles?.full_name} — {showBukti.layanan?.judul_tugas}</p>
+                        <p className="text-lg font-bold text-brand-600 mb-4">{formatRupiah(showBukti.harga_final)}</p>
+                        <img src={showBukti.bukti_transfer_url} alt="Bukti" className="w-full max-h-80 object-contain rounded-xl bg-slate-50 mb-4" />
                         {showBukti.status_pembayaran === 'Menunggu Verifikasi' && (
                             <div className="flex gap-3">
-                                <button onClick={() => handleVerifikasi(showBukti.id, true)} className="flex-1 py-2.5 rounded-xl bg-green-500/20 text-green-400 font-medium hover:bg-green-500/30 transition-all flex items-center justify-center gap-2">
-                                    <CheckCircle className="w-4 h-4" /> Terima
+                                <button onClick={() => handleVerifikasi(showBukti.id, true)} className="flex-1 py-2.5 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-600 transition-all flex items-center justify-center gap-2">
+                                    <CheckCircle weight="bold" className="w-4 h-4" /> Terima
                                 </button>
-                                <button onClick={() => handleVerifikasi(showBukti.id, false)} className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-medium hover:bg-red-500/30 transition-all flex items-center justify-center gap-2">
-                                    <XCircle className="w-4 h-4" /> Tolak
+                                <button onClick={() => handleVerifikasi(showBukti.id, false)} className="flex-1 py-2.5 rounded-xl bg-red-50 text-red-600 border border-red-200 font-medium hover:bg-red-100 transition-all flex items-center justify-center gap-2">
+                                    <XCircle weight="bold" className="w-4 h-4" /> Tolak
                                 </button>
                             </div>
                         )}
@@ -470,61 +533,57 @@ export default function AdminOrders() {
             <Modal open={!!uploadModal} onClose={() => setUploadModal(null)} title="Upload Hasil Tugas" maxWidth="max-w-lg" scrollable>
                 {uploadModal && (
                     <>
-                        <p className="text-sm text-slate-400 mb-4">{uploadModal.layanan?.judul_tugas} — {uploadModal.profiles?.full_name}</p>
+                        <p className="text-sm text-slate-500 mb-4">{uploadModal.layanan?.judul_tugas} — {uploadModal.profiles?.full_name}</p>
 
-                        {/* Existing files */}
                         {uploadModal.hasil_files?.length > 0 && (
                             <div className="mb-4">
-                                <p className="text-xs text-slate-500 mb-2">File yang sudah diupload:</p>
+                                <p className="text-xs text-slate-400 mb-2">File yang sudah diupload:</p>
                                 <div className="space-y-2">
                                     {uploadModal.hasil_files.map((f, i) => (
-                                        <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-white/5">
-                                            <span className="text-sm text-slate-300 truncate flex-1">{getFileIcon(f.name)} {f.name}</span>
-                                            <span className="text-xs text-slate-500 shrink-0 ml-2">{formatSize(f.size)}</span>
+                                        <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50">
+                                            <span className="text-sm text-slate-600 truncate flex-1">{getFileIcon(f.name)} {f.name}</span>
+                                            <span className="text-xs text-slate-400 shrink-0 ml-2">{formatSize(f.size)}</span>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         )}
 
-                        {/* File picker */}
-                        <label className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed border-white/10 hover:border-primary/30 cursor-pointer transition-all group mb-4">
+                        <label className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed border-slate-200 hover:border-brand-300 cursor-pointer transition-all group mb-4">
                             <input type="file" multiple className="hidden" onChange={(e) => setUploadFiles(Array.from(e.target.files))} />
-                            <Upload className="w-8 h-8 text-slate-500 group-hover:text-primary-light transition-colors mb-2" />
-                            <span className="text-sm text-slate-400 group-hover:text-slate-300">Klik untuk pilih file</span>
-                            <span className="text-xs text-slate-600 mt-1">Gambar, Dokumen, ZIP (max 50MB per file)</span>
+                            <UploadSimple className="w-8 h-8 text-slate-400 group-hover:text-brand-500 transition-colors mb-2" />
+                            <span className="text-sm text-slate-500 group-hover:text-slate-700">Klik untuk pilih file</span>
+                            <span className="text-xs text-slate-400 mt-1">Gambar, Dokumen, ZIP (max 50MB per file)</span>
                         </label>
 
-                        {/* Selected files preview */}
                         {uploadFiles.length > 0 && (
                             <div className="space-y-2 mb-4">
                                 {uploadFiles.map((f, i) => (
-                                    <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-primary/5 border border-primary/10">
-                                        <span className="text-sm text-primary-light truncate flex-1">{getFileIcon(f.name)} {f.name}</span>
-                                        <span className="text-xs text-slate-500 shrink-0 ml-2">{formatSize(f.size)}</span>
+                                    <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-brand-50 border border-brand-100">
+                                        <span className="text-sm text-brand-600 truncate flex-1">{getFileIcon(f.name)} {f.name}</span>
+                                        <span className="text-xs text-slate-400 shrink-0 ml-2">{formatSize(f.size)}</span>
                                     </div>
                                 ))}
                             </div>
                         )}
 
-                        {/* Catatan */}
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Catatan / Link (opsional)</label>
+                            <label className="block text-sm font-medium text-slate-600 mb-1.5">Catatan / Link (opsional)</label>
                             <textarea value={uploadNote} onChange={(e) => setUploadNote(e.target.value)} rows={3}
-                                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all resize-none"
+                                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 placeholder-slate-400 focus:outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-100 transition-all resize-none"
                                 placeholder="Contoh: Link Google Drive, catatan penting, atau instruksi..." />
                         </div>
 
                         <div className="flex gap-3">
                             {uploadFiles.length > 0 ? (
                                 <button onClick={handleUploadHasil} disabled={uploading}
-                                    className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                                    {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Upload className="w-5 h-5" /> Upload {uploadFiles.length} File</>}
+                                    className="flex-1 py-2.5 rounded-xl bg-brand-500 text-white font-semibold hover:bg-brand-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                                    {uploading ? <SpinnerGap className="w-5 h-5 animate-spin" /> : <><UploadSimple weight="bold" className="w-5 h-5" /> Upload {uploadFiles.length} File</>}
                                 </button>
                             ) : (
                                 <button onClick={handleSaveNote}
-                                    className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2">
-                                    <FileText className="w-5 h-5" /> Simpan Catatan
+                                    className="flex-1 py-2.5 rounded-xl bg-brand-500 text-white font-semibold hover:bg-brand-600 transition-all flex items-center justify-center gap-2">
+                                    <FileText weight="bold" className="w-5 h-5" /> Simpan Catatan
                                 </button>
                             )}
                         </div>
@@ -536,44 +595,42 @@ export default function AdminOrders() {
             <Modal open={!!viewHasil} onClose={() => setViewHasil(null)} title="Hasil Tugas" maxWidth="max-w-lg" scrollable>
                 {viewHasil && (
                     <>
-                        <p className="text-sm text-slate-400 mb-4">{viewHasil.layanan?.judul_tugas} — {viewHasil.profiles?.full_name}</p>
+                        <p className="text-sm text-slate-500 mb-4">{viewHasil.layanan?.judul_tugas} — {viewHasil.profiles?.full_name}</p>
 
-                        {/* Files */}
                         {viewHasil.hasil_files?.length > 0 ? (
                             <div className="space-y-2 mb-4">
                                 {viewHasil.hasil_files.map((f, i) => (
                                     <a key={i} href={f.url} target="_blank" rel="noopener noreferrer"
-                                        className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all group">
+                                        className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-all group">
                                         <div className="flex items-center gap-2 flex-1 min-w-0">
                                             <span className="text-lg">{getFileIcon(f.name)}</span>
                                             <div className="min-w-0">
-                                                <p className="text-sm text-white truncate group-hover:text-primary-light transition-colors">{f.name}</p>
-                                                <p className="text-xs text-slate-500">{formatSize(f.size)}</p>
+                                                <p className="text-sm text-slate-700 truncate group-hover:text-brand-600 transition-colors">{f.name}</p>
+                                                <p className="text-xs text-slate-400">{formatSize(f.size)}</p>
                                             </div>
                                         </div>
-                                        <Download className="w-4 h-4 text-slate-500 group-hover:text-primary-light shrink-0" />
+                                        <DownloadSimple weight="bold" className="w-4 h-4 text-slate-400 group-hover:text-brand-600 shrink-0" />
                                     </a>
                                 ))}
                             </div>
                         ) : viewHasil.hasil_url && (
                             <a href={viewHasil.hasil_url} target="_blank" rel="noopener noreferrer"
-                                className="flex items-center justify-center gap-2 p-3 rounded-xl bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-all mb-4">
-                                <Download className="w-4 h-4" /> Download File
+                                className="flex items-center justify-center gap-2 p-3 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all mb-4 font-medium">
+                                <DownloadSimple weight="bold" className="w-4 h-4" /> Download File
                             </a>
                         )}
 
-                        {/* Catatan */}
                         {viewHasil.catatan_hasil && (
-                            <div className="p-4 rounded-xl bg-white/5">
-                                <p className="text-xs text-slate-500 mb-1">Catatan dari Admin:</p>
-                                <p className="text-sm text-slate-300 whitespace-pre-wrap">{viewHasil.catatan_hasil}</p>
+                            <div className="p-4 rounded-xl bg-slate-50">
+                                <p className="text-xs text-slate-400 mb-1">Catatan dari Admin:</p>
+                                <p className="text-sm text-slate-600 whitespace-pre-wrap">{viewHasil.catatan_hasil}</p>
                             </div>
                         )}
                     </>
                 )}
             </Modal>
 
-            {/* Chat Modal (#33) */}
+            {/* Chat Modal */}
             <Modal open={!!chatOrder} onClose={() => setChatOrder(null)} title={chatOrder ? `Diskusi — ${chatOrder.layanan?.judul_tugas}` : ''} maxWidth="max-w-lg" scrollable>
                 {chatOrder && <OrderChat orderId={chatOrder.id} />}
             </Modal>
@@ -582,41 +639,41 @@ export default function AdminOrders() {
             <Modal open={!!catatanModal} onClose={() => setCatatanModal(null)} title="Catatan Internal" maxWidth="max-w-md">
                 {catatanModal && (
                     <>
-                        <p className="text-sm text-slate-400 mb-3">{catatanModal.layanan?.judul_tugas} — {catatanModal.profiles?.full_name}</p>
+                        <p className="text-sm text-slate-500 mb-3">{catatanModal.layanan?.judul_tugas} — {catatanModal.profiles?.full_name}</p>
                         <textarea value={catatanText} onChange={(e) => setCatatanText(e.target.value)} rows={5}
-                            className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 transition-all resize-none mb-4"
+                            className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 placeholder-slate-400 focus:outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-100 transition-all resize-none mb-4"
                             placeholder="Tulis catatan internal di sini (hanya admin yang bisa melihat)..." />
                         <button onClick={saveCatatanInternal} disabled={savingCatatan}
-                            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                            {savingCatatan ? <Loader2 className="w-5 h-5 animate-spin" /> : <><StickyNote className="w-5 h-5" /> Simpan Catatan</>}
+                            className="w-full py-2.5 rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                            {savingCatatan ? <SpinnerGap className="w-5 h-5 animate-spin" /> : <><Note weight="fill" className="w-5 h-5" /> Simpan Catatan</>}
                         </button>
                     </>
                 )}
             </Modal>
 
-            {/* View Order Files (Client Attachments) Modal */}
+            {/* View Order Files Modal */}
             <Modal open={!!viewOrderFiles} onClose={() => setViewOrderFiles(null)} title="Lampiran dari Klien" maxWidth="max-w-md" scrollable>
                 {viewOrderFiles && (
                     <>
-                        <p className="text-sm text-slate-400 mb-3">{viewOrderFiles.layanan?.judul_tugas} — {viewOrderFiles.profiles?.full_name}</p>
+                        <p className="text-sm text-slate-500 mb-3">{viewOrderFiles.layanan?.judul_tugas} — {viewOrderFiles.profiles?.full_name}</p>
                         {viewOrderFiles.order_files?.length > 0 ? (
                             <div className="space-y-2">
                                 {viewOrderFiles.order_files.map((f, i) => (
                                     <a key={i} href={f.url} target="_blank" rel="noopener noreferrer"
-                                        className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all group">
+                                        className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-all group">
                                         <div className="flex items-center gap-2 flex-1 min-w-0">
                                             <span className="text-lg">{getFileIcon(f.name)}</span>
                                             <div className="min-w-0">
-                                                <p className="text-sm text-white truncate group-hover:text-primary-light transition-colors">{f.name}</p>
-                                                {f.size && <p className="text-xs text-slate-500">{formatSize(f.size)}</p>}
+                                                <p className="text-sm text-slate-700 truncate group-hover:text-brand-600 transition-colors">{f.name}</p>
+                                                {f.size && <p className="text-xs text-slate-400">{formatSize(f.size)}</p>}
                                             </div>
                                         </div>
-                                        <Download className="w-4 h-4 text-slate-500 group-hover:text-primary-light shrink-0" />
+                                        <DownloadSimple weight="bold" className="w-4 h-4 text-slate-400 group-hover:text-brand-600 shrink-0" />
                                     </a>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-sm text-slate-500 text-center py-4">Tidak ada lampiran</p>
+                            <p className="text-sm text-slate-400 text-center py-4">Tidak ada lampiran</p>
                         )}
                     </>
                 )}

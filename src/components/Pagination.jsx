@@ -1,12 +1,9 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { CaretLeft, CaretRight, CaretDown } from '@phosphor-icons/react'
 
 const ITEMS_PER_PAGE = 10
+const PAGE_SIZE_OPTIONS = [8, 10, 15, 20]
 
-/**
- * Reusable pagination component.
- * @param {{ currentPage: number, totalItems: number, onPageChange: (page: number) => void, itemsPerPage?: number }} props
- */
-export default function Pagination({ currentPage, totalItems, onPageChange, itemsPerPage = ITEMS_PER_PAGE }) {
+export default function Pagination({ currentPage, totalItems, onPageChange, itemsPerPage = ITEMS_PER_PAGE, onItemsPerPageChange }) {
   const totalPages = Math.ceil(totalItems / itemsPerPage)
 
   if (totalPages <= 1) return null
@@ -27,68 +24,83 @@ export default function Pagination({ currentPage, totalItems, onPageChange, item
   }
   for (let i = start; i <= end; i++) pages.push(i)
 
+  const from = (currentPage - 1) * itemsPerPage + 1
+  const to = Math.min(currentPage * itemsPerPage, totalItems)
+
   return (
-    <div className="flex items-center justify-center gap-1.5 mt-6">
-      {/* Prev */}
-      <button
-        onClick={() => handlePageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-        aria-label="Halaman sebelumnya"
-      >
-        <ChevronLeft className="w-4 h-4" />
-      </button>
+    <div className="flex items-center justify-between mt-6 pt-6 border-t border-slate-100">
+      {/* Left: info */}
+      <span className="text-xs text-slate-500">
+        Menampilkan {from} hingga {to} dari {totalItems} hasil
+      </span>
 
-      {/* First page + ellipsis */}
-      {start > 1 && (
-        <>
-          <button
-            onClick={() => handlePageChange(1)}
-            className="w-9 h-9 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-          >
-            1
-          </button>
-          {start > 2 && <span className="text-slate-600 text-sm px-1">…</span>}
-        </>
-      )}
-
-      {/* Page numbers */}
-      {pages.map((page) => (
+      {/* Center: page buttons */}
+      <div className="flex items-center gap-2">
         <button
-          key={page}
-          onClick={() => handlePageChange(page)}
-          className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${
-            page === currentPage
-              ? 'bg-primary/20 text-primary-light border border-primary/30'
-              : 'text-slate-400 hover:text-white hover:bg-white/10'
-          }`}
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          aria-label="Halaman sebelumnya"
         >
-          {page}
+          <CaretLeft weight="bold" className="w-4 h-4" />
         </button>
-      ))}
 
-      {/* Last page + ellipsis */}
-      {end < totalPages && (
-        <>
-          {end < totalPages - 1 && <span className="text-slate-600 text-sm px-1">…</span>}
+        {start > 1 && (
+          <>
+            <button onClick={() => handlePageChange(1)} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-50 transition-colors text-sm">
+              1
+            </button>
+            {start > 2 && <span className="text-slate-400">...</span>}
+          </>
+        )}
+
+        {pages.map((page) => (
           <button
-            onClick={() => handlePageChange(totalPages)}
-            className="w-9 h-9 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+            key={page}
+            onClick={() => handlePageChange(page)}
+            className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm transition-colors ${
+              page === currentPage
+                ? 'bg-brand-50 text-brand-600 font-medium'
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
           >
-            {totalPages}
+            {page}
           </button>
-        </>
-      )}
+        ))}
 
-      {/* Next */}
-      <button
-        onClick={() => handlePageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-        aria-label="Halaman berikutnya"
-      >
-        <ChevronRight className="w-4 h-4" />
-      </button>
+        {end < totalPages && (
+          <>
+            {end < totalPages - 1 && <span className="text-slate-400">...</span>}
+            <button onClick={() => handlePageChange(totalPages)} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-50 transition-colors text-sm">
+              {totalPages}
+            </button>
+          </>
+        )}
+
+        <button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          aria-label="Halaman berikutnya"
+        >
+          <CaretRight weight="bold" className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Right: per-page selector */}
+      <div className="flex items-center gap-2 text-xs text-slate-500">
+        <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-slate-100">
+          <select
+            value={itemsPerPage}
+            onChange={(e) => onItemsPerPageChange?.(Number(e.target.value))}
+            className="bg-transparent text-xs text-slate-600 font-medium focus:outline-none cursor-pointer appearance-none pr-1"
+          >
+            {PAGE_SIZE_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <CaretDown className="w-3 h-3 text-slate-400" />
+        </div>
+        per halaman
+      </div>
     </div>
   )
 }

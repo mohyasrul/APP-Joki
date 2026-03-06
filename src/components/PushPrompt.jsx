@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Bell, X } from 'lucide-react'
+import { Bell, X } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
 import { isPushSupported, checkSubscription, subscribeToPush, getPermissionStatus, ensureSubscription } from '../lib/pushManager'
 
@@ -113,27 +113,27 @@ export default function PushPrompt() {
 
     return (
         <div className="fixed bottom-20 md:bottom-4 left-4 right-4 z-50 mx-auto max-w-md slide-up">
-            <div className="glass rounded-2xl border border-primary/20 shadow-2xl shadow-primary/10 p-4">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-lg p-4">
                 <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
-                        <Bell className="w-5 h-5 text-primary-light" />
+                    <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center shrink-0">
+                        <Bell weight="fill" className="w-5 h-5 text-brand-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-white">Aktifkan Notifikasi</p>
-                        <p className="text-xs text-slate-400 mt-0.5">
+                        <p className="text-sm font-semibold text-slate-800">Aktifkan Notifikasi</p>
+                        <p className="text-xs text-slate-500 mt-0.5">
                             Dapatkan notifikasi langsung di HP saat ada update pesanan atau request baru.
                         </p>
                         <div className="flex items-center gap-2 mt-3">
                             <button
                                 onClick={handleEnable}
                                 disabled={loading}
-                                className="px-4 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-medium transition-all disabled:opacity-50"
+                                className="px-4 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-xs font-medium transition-all disabled:opacity-50"
                             >
                                 {loading ? (status || 'Mengaktifkan...') : status || 'Aktifkan'}
                             </button>
                             <button
                                 onClick={handleDismiss}
-                                className="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                                className="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all"
                             >
                                 Nanti saja
                             </button>
@@ -141,9 +141,9 @@ export default function PushPrompt() {
                     </div>
                     <button
                         onClick={handleDismiss}
-                        className="p-1 rounded-lg text-slate-500 hover:text-white hover:bg-white/10 transition-all shrink-0"
+                        className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all shrink-0"
                     >
-                        <X className="w-4 h-4" />
+                        <X weight="bold" className="w-4 h-4" />
                     </button>
                 </div>
             </div>

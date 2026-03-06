@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatRupiah } from '../../lib/utils'
 import { useToast } from '../../components/Toast'
-import { DollarSign, TrendingUp, Calendar, Download, Loader2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { CurrencyDollar, TrendUp, Calendar, DownloadSimple, SpinnerGap, WarningCircle, CaretDown, CaretUp } from '@phosphor-icons/react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
 const BULAN_LABEL = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
@@ -76,7 +76,6 @@ export default function Keuangan() {
     const maxChart = Math.max(...months.map(m => m.value), 1)
     const unpaidTotal = unpaidOrders.reduce((sum, o) => sum + (o.harga_final || 0), 0)
 
-    // CSV Export — fetches all on demand
     const exportCSV = async () => {
         try {
             const { data, error } = await supabase
@@ -103,60 +102,53 @@ export default function Keuangan() {
         }
     }
 
-    if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+    if (loading) return <div className="flex items-center justify-center py-20"><SpinnerGap className="w-8 h-8 animate-spin text-brand-500" /></div>
+
+    const statCards = [
+        { label: `Total ${selectedYear}`, value: total, icon: CurrencyDollar, bg: 'bg-brand-50', iconColor: 'text-brand-600', trend: growth !== 0 ? `${growth >= 0 ? '+' : ''}${growth}% vs lalu` : null, trendUp: growth >= 0 },
+        { label: 'Bulan Ini', value: monthTotal, icon: Calendar, bg: 'bg-blue-50', iconColor: 'text-blue-600', trend: null },
+        { label: 'Minggu Ini', value: weekTotal, icon: TrendUp, bg: 'bg-emerald-50', iconColor: 'text-emerald-600', trend: null },
+        { label: 'Growth vs Bulan Lalu', value: null, growth, icon: TrendUp, bg: growth >= 0 ? 'bg-emerald-50' : 'bg-red-50', iconColor: growth >= 0 ? 'text-emerald-600' : 'text-red-600', trend: null },
+    ]
 
     return (
         <div className="fade-in">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <DollarSign className="w-7 h-7 text-primary-light" /> Laporan Keuangan
-                    </h1>
-                    <p className="text-sm text-slate-400 mt-1">Ringkasan pemasukan dari joki tugas</p>
+            <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+                <div className="flex gap-2">
+                    {YEAR_OPTIONS.map(y => (
+                        <button key={y} onClick={() => setSelectedYear(y)}
+                            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${selectedYear === y ? 'bg-brand-50 text-brand-600' : 'text-slate-500 hover:bg-slate-50'}`}>
+                            {y}
+                        </button>
+                    ))}
                 </div>
-                <div className="flex items-center gap-3">
-                    {/* Year Selector — segmented control (3 options) */}
-                    <div className="segmented-tab-container inline-flex">
-                        {YEAR_OPTIONS.map(y => (
-                            <button key={y} onClick={() => setSelectedYear(y)}
-                                className={`segmented-tab-item ${selectedYear === y ? 'active' : ''}`}>
-                                {y}
-                            </button>
-                        ))}
-                    </div>
-                    <button onClick={exportCSV}
-                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium text-sm hover:shadow-lg hover:shadow-green-500/25 transition-all flex items-center gap-2">
-                        <Download className="w-4 h-4" /> Export CSV
-                    </button>
-                </div>
+                <button onClick={exportCSV}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-50 text-brand-600 font-medium text-sm hover:bg-brand-100 transition-colors shadow-sm border border-brand-100">
+                    <DownloadSimple className="w-4 h-4" /> Export CSV
+                </button>
             </div>
 
-            {/* Summary Cards — horizontal icon-right layout */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                {[
-                    { label: `Total ${selectedYear}`, value: total, icon: DollarSign, gradient: 'from-primary to-purple-500', trend: growth !== 0 ? `${growth >= 0 ? '+' : ''}${growth}% vs lalu` : null, trendUp: growth >= 0 },
-                    { label: 'Bulan Ini', value: monthTotal, icon: Calendar, gradient: 'from-blue-500 to-cyan-500', trend: null },
-                    { label: 'Minggu Ini', value: weekTotal, icon: TrendingUp, gradient: 'from-green-500 to-emerald-500', trend: null },
-                    { label: 'Growth vs Bulan Lalu', value: null, growth, icon: TrendingUp, gradient: growth >= 0 ? 'from-green-500 to-emerald-500' : 'from-red-500 to-pink-500', trend: null },
-                ].map((card, i) => (
-                    <div key={i} className="glass glow rounded-2xl p-5 hover:-translate-y-0.5 transition-all duration-200">
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                                <p className="text-xs text-slate-400 mb-1.5">{card.label}</p>
-                                {card.value !== null && card.value !== undefined ? (
-                                    <p className="text-2xl font-bold gradient-text">{formatRupiah(card.value)}</p>
-                                ) : (
-                                    <p className={`text-2xl font-bold ${card.growth >= 0 ? 'text-green-400' : 'text-red-400'}`}>{card.growth >= 0 ? '+' : ''}{card.growth}%</p>
-                                )}
-                                {card.trend && (
-                                    <span className={`inline-flex items-center mt-1.5 text-xs font-semibold px-1.5 py-0.5 rounded ${
-                                        card.trendUp ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
-                                    }`}>{card.trend}</span>
-                                )}
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5 mb-6 md:mb-8">
+                {statCards.map((card, i) => (
+                    <div key={i} className="bg-white p-3 md:p-5 rounded-xl md:rounded-2xl shadow-sm border border-slate-100">
+                        <div className="flex justify-between items-start mb-4">
+                            <h3 className="text-slate-500 font-medium text-sm">{card.label}</h3>
+                            <div className={`w-8 h-8 rounded-full ${card.bg} flex items-center justify-center`}>
+                                <card.icon weight="fill" className={`w-4 h-4 ${card.iconColor}`} />
                             </div>
-                            <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br ${card.gradient} flex items-center justify-center shrink-0 shadow-lg`}>
-                                <card.icon className="w-5 h-5 text-white" />
-                            </div>
+                        </div>
+                        <div className="flex items-end justify-between">
+                            {card.value !== null && card.value !== undefined ? (
+                                <span className="text-lg md:text-3xl font-bold">{formatRupiah(card.value)}</span>
+                            ) : (
+                                <span className={`text-lg md:text-3xl font-bold ${card.growth >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{card.growth >= 0 ? '+' : ''}{card.growth}%</span>
+                            )}
+                            {card.trend && (
+                                <div className="text-right flex flex-col items-end">
+                                    <span className={`text-xs font-semibold ${card.trendUp ? 'text-emerald-500' : 'text-red-500'}`}>{card.trend}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -164,29 +156,29 @@ export default function Keuangan() {
 
             {/* Belum Dibayar Section */}
             {unpaidOrders.length > 0 && (
-                <div className="glass rounded-2xl p-5 mb-6 border border-orange-500/20">
+                <div className="bg-white rounded-xl md:rounded-2xl shadow-sm border border-amber-200 p-4 md:p-5 mb-6">
                     <button onClick={() => setShowUnpaid(!showUnpaid)}
                         className="w-full flex items-center justify-between text-left">
                         <div className="flex items-center gap-3">
-                            <AlertCircle className="w-5 h-5 text-orange-400" />
+                            <WarningCircle weight="fill" className="w-5 h-5 text-amber-500" />
                             <div>
-                                <p className="text-sm font-semibold text-white">Belum Dibayar / Menunggu Verifikasi</p>
-                                <p className="text-xs text-slate-400">{unpaidOrders.length} order • Total {formatRupiah(unpaidTotal)}</p>
+                                <p className="text-sm font-semibold text-slate-800">Belum Dibayar / Menunggu Verifikasi</p>
+                                <p className="text-xs text-slate-500">{unpaidOrders.length} order • Total {formatRupiah(unpaidTotal)}</p>
                             </div>
                         </div>
-                        {showUnpaid ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                        {showUnpaid ? <CaretUp weight="bold" className="w-5 h-5 text-slate-400" /> : <CaretDown weight="bold" className="w-5 h-5 text-slate-400" />}
                     </button>
                     {showUnpaid && (
                         <div className="mt-4 space-y-2">
                             {unpaidOrders.map(o => (
-                                <div key={o.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                                <div key={o.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50">
                                     <div>
-                                        <p className="text-sm font-medium text-white">{o.layanan?.judul_tugas || 'Custom Request'}</p>
-                                        <p className="text-xs text-slate-500">{o.profiles?.full_name} • {new Date(o.created_at).toLocaleDateString('id-ID')}</p>
+                                        <p className="text-sm font-medium text-slate-700">{o.layanan?.judul_tugas || 'Custom Request'}</p>
+                                        <p className="text-xs text-slate-400">{o.profiles?.full_name} • {new Date(o.created_at).toLocaleDateString('id-ID')}</p>
                                     </div>
                                     <div className="text-right">
-                                        <span className="text-sm font-bold gradient-text">{formatRupiah(o.harga_final)}</span>
-                                        <p className={`text-xs mt-0.5 ${o.status_pembayaran === 'Menunggu Verifikasi' ? 'text-yellow-400' : 'text-red-400'}`}>{o.status_pembayaran}</p>
+                                        <span className="text-sm font-bold text-brand-600">{formatRupiah(o.harga_final)}</span>
+                                        <p className={`text-xs mt-0.5 ${o.status_pembayaran === 'Menunggu Verifikasi' ? 'text-amber-500' : 'text-red-500'}`}>{o.status_pembayaran}</p>
                                     </div>
                                 </div>
                             ))}
@@ -196,47 +188,74 @@ export default function Keuangan() {
             )}
 
             {/* Chart */}
-            <div className="glass rounded-2xl p-6 mb-8 glow">
-                <h3 className="text-lg font-semibold text-white mb-6">Pendapatan Per Bulan — {selectedYear}</h3>
-                <div className="flex items-end gap-3 h-40">
+            <div className="bg-white rounded-xl md:rounded-2xl shadow-sm border border-slate-100 p-4 md:p-6 mb-6 md:mb-8">
+                <h3 className="text-lg font-semibold text-slate-800 mb-6">Pendapatan Per Bulan — {selectedYear}</h3>
+                <div className="flex items-end gap-1.5 md:gap-3 h-36 md:h-40">
                     {months.map((m, i) => (
                         <div key={i} className="flex-1 flex flex-col items-center gap-2">
                             <span className="text-xs text-slate-400">{m.value > 0 ? formatRupiah(m.value) : ''}</span>
-                            <div className="w-full rounded-t-lg bg-gradient-to-t from-primary to-purple-500 transition-all duration-500"
+                            <div className="w-full rounded-t-lg bg-gradient-to-t from-brand-500 to-brand-400 transition-all duration-500"
                                 style={{ height: `${Math.max((m.value / maxChart) * 100, 4)}%`, minHeight: m.value > 0 ? '8px' : '4px' }} />
-                            <span className="text-xs text-slate-500">{m.label}</span>
+                            <span className="text-xs text-slate-400">{m.label}</span>
                         </div>
                     ))}
                 </div>
             </div>
 
             {/* Transactions */}
-            <div className="glass rounded-2xl p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Riwayat Transaksi ({totalCount})</h3>
+            <div className="bg-white rounded-xl md:rounded-2xl shadow-sm border border-slate-100 p-4 md:p-6">
+                <h3 className="text-lg font-bold mb-6">Riwayat Transaksi ({totalCount})</h3>
                 {orders.length === 0 ? (
-                    <p className="text-slate-500 text-center py-8">Belum ada transaksi selesai</p>
+                    <p className="text-slate-400 text-center py-8">Belum ada transaksi selesai</p>
                 ) : (
-                    <div className="space-y-3">
-                        {orders.map(o => (
-                            <div key={o.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5">
-                                <div>
-                                    <p className="text-sm font-medium text-white">{o.layanan?.judul_tugas}</p>
-                                    <p className="text-xs text-slate-500">
-                                        {o.profiles?.full_name} • {new Date(o.created_at).toLocaleDateString('id-ID')}
-                                        {o.kode_promo && <span className="text-green-400"> • 🏷️ {o.kode_promo}</span>}
-                                    </p>
+                    <>
+                        <div className="overflow-x-auto hidden md:block">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="text-slate-400 text-xs font-medium border-b border-slate-100">
+                                        <th className="pb-3 px-2 font-normal">Layanan</th>
+                                        <th className="pb-3 px-2 font-normal">Klien</th>
+                                        <th className="pb-3 px-2 font-normal">Tanggal</th>
+                                        <th className="pb-3 px-2 font-normal">Promo</th>
+                                        <th className="pb-3 px-2 font-normal text-right">Jumlah</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-sm">
+                                    {orders.map(o => (
+                                        <tr key={o.id} className="group hover:bg-slate-50/50 transition-colors border-b border-slate-50 last:border-0">
+                                            <td className="py-4 px-2 font-medium">{o.layanan?.judul_tugas || '-'}</td>
+                                            <td className="py-4 px-2 text-slate-600">{o.profiles?.full_name || '-'}</td>
+                                            <td className="py-4 px-2 text-slate-500 whitespace-nowrap">{new Date(o.created_at).toLocaleDateString('id-ID')}</td>
+                                            <td className="py-4 px-2">{o.kode_promo ? <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-600 text-xs font-medium">{o.kode_promo}</span> : '-'}</td>
+                                            <td className="py-4 px-2 text-right">
+                                                <span className="font-medium text-brand-600">{formatRupiah(o.harga_final)}</span>
+                                                {o.diskon > 0 && <span className="block text-xs text-emerald-500">-{formatRupiah(o.diskon)}</span>}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile card view */}
+                        <div className="md:hidden space-y-3">
+                            {orders.map(o => (
+                                <div key={o.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-medium text-slate-700 truncate">{o.layanan?.judul_tugas || '-'}</p>
+                                        <p className="text-xs text-slate-400">{o.profiles?.full_name || '-'} • {new Date(o.created_at).toLocaleDateString('id-ID')}</p>
+                                        {o.kode_promo && <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">{o.kode_promo}</span>}
+                                    </div>
+                                    <div className="text-right shrink-0 ml-3">
+                                        <p className="text-sm font-bold text-brand-600">{formatRupiah(o.harga_final)}</p>
+                                        {o.diskon > 0 && <p className="text-xs text-emerald-500">-{formatRupiah(o.diskon)}</p>}
+                                    </div>
                                 </div>
-                                <div className="text-right">
-                                    <span className="text-sm font-bold gradient-text">{formatRupiah(o.harga_final)}</span>
-                                    {o.diskon > 0 && <p className="text-xs text-green-400">-{formatRupiah(o.diskon)}</p>}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    </>
                 )}
-                {totalCount > ITEMS_PER_PAGE && (
-                    <Pagination currentPage={currentPage} totalItems={totalCount} onPageChange={setCurrentPage} />
-                )}
+                <Pagination currentPage={currentPage} totalItems={totalCount} onPageChange={setCurrentPage} />
             </div>
         </div>
     )

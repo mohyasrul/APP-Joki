@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { LogIn, Mail, Lock, Sparkles, AlertCircle, ArrowLeft, CheckCircle2, Eye, EyeOff } from 'lucide-react'
+import { SignIn, Envelope, Lock, Sparkle, WarningCircle, CheckCircle, Eye, EyeSlash } from '@phosphor-icons/react'
 import Modal from '../../components/Modal'
 
 export default function Login() {
@@ -52,37 +52,39 @@ export default function Login() {
         }
     }
 
+    const inputClass = "w-full pl-11 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 placeholder-slate-400 focus:outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-100 transition-all"
+
     return (
-        <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="min-h-screen flex items-center justify-center px-4 py-12 md:py-0 bg-slate-50">
             <div className="w-full max-w-md slide-up">
                 {/* Logo */}
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center mx-auto mb-4 shadow-xl shadow-primary/20">
-                        <Sparkles className="w-8 h-8 text-white" />
+                    <div className="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center mx-auto mb-4">
+                        <Sparkle weight="fill" className="w-6 h-6 text-white" />
                     </div>
-                    <h1 className="text-3xl font-bold gradient-text">Jokskuy</h1>
-                    <p className="text-slate-400 mt-2">Masuk ke akun kamu</p>
+                    <h1 className="text-2xl font-bold">Jokskuy</h1>
+                    <p className="text-slate-500 mt-1 text-sm">Masuk ke akun kamu</p>
                 </div>
 
                 {/* Form */}
-                <div className="glass rounded-2xl p-8 glow">
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 sm:p-8">
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {error && (
-                            <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                                <AlertCircle className="w-4 h-4 shrink-0" />
+                            <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-500 text-sm">
+                                <WarningCircle weight="bold" className="w-4 h-4 shrink-0" />
                                 {error}
                             </div>
                         )}
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
+                            <label className="block text-sm font-medium text-slate-600 mb-1.5">Email</label>
                             <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                                <Envelope weight="bold" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                 <input
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
+                                    className={inputClass}
                                     placeholder="email@example.com"
                                     required
                                 />
@@ -90,27 +92,27 @@ export default function Login() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+                            <label className="block text-sm font-medium text-slate-600 mb-1.5">Password</label>
                             <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                                <Lock weight="bold" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                 <input
                                     type={showPassword ? 'text' : 'password'}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-11 pr-11 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
+                                    className={inputClass + ' pr-11'}
                                     placeholder="••••••••"
                                     required
                                 />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
-                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                                    {showPassword ? <EyeSlash weight="bold" className="w-5 h-5" /> : <Eye weight="bold" className="w-5 h-5" />}
                                 </button>
                             </div>
                         </div>
 
                         <div className="flex justify-end">
                             <button type="button" onClick={() => { setForgotEmail(email); setShowForgot(true); setForgotSent(false); setForgotError(''); }}
-                                className="text-xs text-primary-light hover:text-primary transition-colors">
+                                className="text-xs text-brand-600 hover:text-brand-700 transition-colors">
                                 Lupa Password?
                             </button>
                         </div>
@@ -118,22 +120,22 @@ export default function Login() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-primary/25 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                            className="w-full py-3 rounded-xl bg-brand-500 text-white font-semibold hover:bg-brand-600 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
                         >
                             {loading ? (
                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             ) : (
                                 <>
-                                    <LogIn className="w-5 h-5" />
+                                    <SignIn weight="bold" className="w-5 h-5" />
                                     Masuk
                                 </>
                             )}
                         </button>
                     </form>
 
-                    <p className="text-center text-sm text-slate-400 mt-6">
+                    <p className="text-center text-sm text-slate-500 mt-6">
                         Belum punya akun?{' '}
-                        <Link to="/register" className="text-primary-light hover:text-primary font-medium transition-colors">
+                        <Link to="/register" className="text-brand-600 hover:text-brand-700 font-medium transition-colors">
                             Daftar disini
                         </Link>
                     </p>
@@ -143,30 +145,30 @@ export default function Login() {
                 <Modal open={showForgot} onClose={() => setShowForgot(false)} title={forgotSent ? null : 'Lupa Password'} maxWidth="max-w-sm">
                     {forgotSent ? (
                         <div className="text-center py-2">
-                            <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-3" />
-                            <h3 className="text-lg font-bold text-white mb-2">Email Terkirim!</h3>
-                            <p className="text-sm text-slate-400 mb-4">Cek inbox <span className="text-primary-light font-medium">{forgotEmail}</span> untuk link reset password.</p>
+                            <CheckCircle weight="fill" className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
+                            <h3 className="text-lg font-bold text-slate-800 mb-2">Email Terkirim!</h3>
+                            <p className="text-sm text-slate-500 mb-4">Cek inbox <span className="text-brand-600 font-medium">{forgotEmail}</span> untuk link reset password.</p>
                             <button onClick={() => setShowForgot(false)}
-                                className="w-full py-2.5 rounded-xl bg-primary/20 text-primary-light font-medium text-sm hover:bg-primary/30 transition-all">
+                                className="w-full py-2.5 rounded-xl bg-brand-50 text-brand-600 font-medium text-sm hover:bg-brand-100 transition-all">
                                 Kembali ke Login
                             </button>
                         </div>
                     ) : (
                         <form onSubmit={handleForgotPassword} className="space-y-4">
-                            <p className="text-sm text-slate-400">Masukkan email akunmu, kami akan kirim link untuk reset password.</p>
+                            <p className="text-sm text-slate-500">Masukkan email akunmu, kami akan kirim link untuk reset password.</p>
                             {forgotError && (
-                                <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                                    <AlertCircle className="w-4 h-4 shrink-0" />{forgotError}
+                                <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-500 text-sm">
+                                    <WarningCircle weight="bold" className="w-4 h-4 shrink-0" />{forgotError}
                                 </div>
                             )}
                             <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                                <Envelope weight="bold" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                 <input type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)}
-                                    className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
+                                    className={inputClass}
                                     placeholder="email@example.com" required autoFocus />
                             </div>
                             <button type="submit" disabled={forgotLoading}
-                                className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-primary/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                                className="w-full py-3 rounded-xl bg-brand-500 text-white font-semibold hover:bg-brand-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
                                 {forgotLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Kirim Link Reset'}
                             </button>
                         </form>

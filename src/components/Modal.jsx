@@ -1,23 +1,32 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
-import { X } from 'lucide-react'
+import { X } from '@phosphor-icons/react'
+
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < breakpoint : false
+  )
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`)
+    const handler = (e) => setIsMobile(e.matches)
+    setIsMobile(mq.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [breakpoint])
+  return isMobile
+}
 
 /**
  * Accessible Modal component with focus trap, Escape key, and portal rendering.
- *
- * @param {boolean} open - Whether the modal is visible
- * @param {Function} onClose - Called when the modal should close
- * @param {string} title - Modal title (used for aria-labelledby)
- * @param {React.ReactNode} children - Modal body content
- * @param {string} [maxWidth='max-w-md'] - Tailwind max-width class
- * @param {boolean} [showClose=true] - Whether to show the X close button
- * @param {boolean} [scrollable=false] - Whether modal body scrolls
+ * On mobile (< 768px): renders as a bottom-sheet with drag handle.
+ * On desktop (≥ 768px): renders as a centered dialog.
  */
 export default function Modal({ open, onClose, title, children, maxWidth = 'max-w-md', showClose = true, scrollable = false }) {
   const overlayRef = useRef(null)
   const modalRef = useRef(null)
   const previousFocus = useRef(null)
+  const isMobile = useIsMobile()
 
   useBodyScrollLock(open)
 
@@ -86,7 +95,10 @@ export default function Modal({ open, onClose, title, children, maxWidth = 'max-
     <div
       ref={overlayRef}
       onClick={handleOverlayClick}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className={`fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm ${isMobile
+          ? 'flex items-end'
+          : 'flex items-center justify-center p-4'
+        }`}
       role="presentation"
     >
       <div
@@ -95,23 +107,34 @@ export default function Modal({ open, onClose, title, children, maxWidth = 'max-
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`w-full ${maxWidth} glass rounded-2xl p-6 slide-up glow outline-none ${scrollable ? 'max-h-[90vh] overflow-y-auto' : ''}`}
+        className={
+          isMobile
+            ? `w-full bg-white rounded-t-2xl p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] shadow-xl slide-up-sheet outline-none max-h-[90vh] overflow-y-auto`
+            : `w-full ${maxWidth} bg-white rounded-2xl p-6 shadow-xl slide-up outline-none ${scrollable ? 'max-h-[90vh] overflow-y-auto' : ''}`
+        }
       >
+        {/* Drag handle — mobile only */}
+        {isMobile && (
+          <div className="flex justify-center mb-3 -mt-1">
+            <div className="w-10 h-1 rounded-full bg-slate-200" />
+          </div>
+        )}
+
         {/* Header */}
         {(title || showClose) && (
           <div className="flex items-center justify-between mb-4">
             {title && (
-              <h2 id={titleId} className="text-lg font-bold text-white">
+              <h2 id={titleId} className="text-lg font-bold text-slate-800">
                 {title}
               </h2>
             )}
             {showClose && (
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                className="p-2.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
                 aria-label="Tutup"
               >
-                <X className="w-5 h-5" />
+                <X weight="bold" className="w-5 h-5" />
               </button>
             )}
           </div>
@@ -124,3 +147,4 @@ export default function Modal({ open, onClose, title, children, maxWidth = 'max-
     document.body
   )
 }
+

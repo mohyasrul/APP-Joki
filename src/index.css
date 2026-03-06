@@ -1,18 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --color-primary: #6366f1;
-  --color-primary-dark: #4f46e5;
-  --color-primary-light: #818cf8;
-  --color-accent: #f59e0b;
-  --color-surface: #1e1b4b;
-  --color-surface-light: #312e81;
-  --color-surface-card: rgba(255, 255, 255, 0.05);
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --color-info: #3b82f6;
+  /* Brand lime-green */
+  --color-brand-50: #f2fbe8;
+  --color-brand-100: #e4f7cf;
+  --color-brand-200: #d9f99d;
+  --color-brand-500: #84cc16;
+  --color-brand-600: #65a30d;
+  /* Page background */
+  --color-pagebg: #f8fafc;
+  /* Legacy aliases */
+  --color-primary: #84cc16;
+  --color-primary-dark: #65a30d;
+  --color-primary-light: #a3e635;
 }
 
 html {
@@ -22,26 +24,33 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background: linear-gradient(135deg, #0f0a2e 0%, #1a1145 40%, #0f172a 100%);
-  color: #e2e8f0;
+  background: var(--color-pagebg);
+  color: #1e293b;
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
 }
 
 /* Ensure inputs don't trigger iOS zoom (min 16px) */
-input, select, textarea {
+input,
+select,
+textarea {
   font-size: 16px;
 }
+
 @media (min-width: 768px) {
-  input, select, textarea {
+
+  input,
+  select,
+  textarea {
     font-size: inherit;
   }
 }
 
 /* Custom scrollbar — WebKit */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -49,69 +58,18 @@ input, select, textarea {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.3);
-  border-radius: 3px;
+  background: #cbd5e1;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.5);
+  background: #94a3b8;
 }
 
 /* Custom scrollbar — Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
-}
-
-/* Glass card effect — desktop: full blur, mobile: solid bg for performance */
-.glass {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-@media (min-width: 768px) {
-  .glass {
-    backdrop-filter: blur(12px);
-  }
-}
-
-@media (max-width: 767px) {
-  .glass {
-    background: rgba(15, 23, 42, 0.85);
-  }
-}
-
-/* Hover effects only on devices that support hover (not touch) */
-@media (hover: hover) {
-  .glass-hover:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(99, 102, 241, 0.3);
-  }
-}
-
-/* Prevent sticky hover on touch devices */
-@media (hover: none) {
-  .glass-hover:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-  /* Disable translate-y hover lift on mobile */
-  .hover\:-translate-y-1:hover {
-    transform: none !important;
-  }
-}
-
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(135deg, #818cf8, #c084fc, #f472b6);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Subtle glow */
-.glow {
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.15), 0 0 60px rgba(99, 102, 241, 0.05);
+  scrollbar-color: #cbd5e1 transparent;
 }
 
 /* Badge animations */
@@ -165,167 +123,73 @@ input, select, textarea {
   }
 }
 
+/* Slide in from right (LayananDrawer) */
+.animate-slide-in-right {
+  animation: slideInRight 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
 /* Safe area padding for PWA standalone mode */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
+
   .safe-area-top {
     padding-top: env(safe-area-inset-top);
   }
 }
 
 /* =============================================
-   Segmented Tab Control
-   ============================================= */
-.segmented-tab-container {
-  display: inline-flex;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 4px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  gap: 2px;
-}
-.segmented-tab-item {
-  padding: 6px 16px;
-  border-radius: 8px;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: #94a3b8;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s ease;
-  background: transparent;
-  border: none;
-}
-.segmented-tab-item:hover {
-  color: #f1f5f9;
-}
-.segmented-tab-item.active {
-  background: rgba(255, 255, 255, 0.10);
-  color: #f1f5f9;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-}
-
-/* =============================================
    Island Floating BottomNav
    ============================================= */
 .floating-nav {
-  /* Glassmorphism island */
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
 
 /* =============================================
-   Sidebar Shine Sweep
-   Used on nav items inside Sidebar
+   Mobile UI Utilities
    ============================================= */
-.sidebar-shine {
-  position: relative;
-  overflow: hidden;
-}
-.sidebar-shine::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
-  transition: transform 0.5s ease;
-}
-.sidebar-shine:hover::after {
-  transform: translateX(100%);
+
+/* Hide scrollbar but keep scroll behavior */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-/* =============================================
-   Card Table — rounded-[2rem] wrapper for order lists
-   Used in: AdminOrders order item cards
-   ============================================= */
-.card-table {
-  border-radius: 2rem;
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
-/* =============================================
-   Light Mode Theme
-   Applied when <html data-theme="light">
-   ============================================= */
-[data-theme="light"] body {
-  background: linear-gradient(135deg, #f0f4ff 0%, #e8edff 40%, #f8faff 100%);
-  color: #1e293b;
+/* Bottom-sheet slide-up animation */
+.slide-up-sheet {
+  animation: slideUpSheet 0.32s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-[data-theme="light"] .glass {
-  background: rgba(255, 255, 255, 0.75);
-  border-color: rgba(99, 102, 241, 0.15);
-}
+@keyframes slideUpSheet {
+  from {
+    transform: translateY(100%);
+    opacity: 0.5;
+  }
 
-@media (min-width: 768px) {
-  [data-theme="light"] .glass {
-    backdrop-filter: blur(12px);
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
 }
 
-@media (max-width: 767px) {
-  [data-theme="light"] .glass {
-    background: rgba(255, 255, 255, 0.9);
-  }
-}
-
-@media (hover: hover) {
-  [data-theme="light"] .glass-hover:hover {
-    background: rgba(99, 102, 241, 0.08);
-    border-color: rgba(99, 102, 241, 0.3);
-  }
-}
-
-[data-theme="light"] .glow {
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.12), 0 4px 24px rgba(0, 0, 0, 0.06);
-}
-
-[data-theme="light"] nav.glass {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(99, 102, 241, 0.12);
-}
-
-/* Text overrides */
-[data-theme="light"] .text-slate-400 { color: #64748b; }
-[data-theme="light"] .text-slate-500 { color: #94a3b8; }
-[data-theme="light"] .text-slate-300 { color: #475569; }
-[data-theme="light"] .text-white     { color: #1e293b; }
-
-/* Scrollbar */
-[data-theme="light"] ::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.25);
-}
-
-/* Inputs */
-[data-theme="light"] input,
-[data-theme="light"] textarea,
-[data-theme="light"] select {
-  background: rgba(99, 102, 241, 0.05);
-  border-color: rgba(99, 102, 241, 0.2);
-  color: #1e293b;
-}
-
-/* BottomNav (island floating) */
-[data-theme="light"] .floating-nav {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border-color: rgba(99, 102, 241, 0.20) !important;
-  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.12);
-}
-
-/* Segmented tabs — light mode */
-[data-theme="light"] .segmented-tab-container {
-  background: rgba(99, 102, 241, 0.06);
-  border-color: rgba(99, 102, 241, 0.15);
-}
-[data-theme="light"] .segmented-tab-item {
-  color: #64748b;
-}
-[data-theme="light"] .segmented-tab-item:hover {
-  color: #1e293b;
-}
-[data-theme="light"] .segmented-tab-item.active {
-  background: rgba(99, 102, 241, 0.12);
-  color: #4f46e5;
-  box-shadow: 0 1px 3px rgba(99, 102, 241, 0.15);
+/* Minimum 44px touch target */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
 }

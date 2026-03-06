@@ -6,14 +6,14 @@ import Pagination from '../../components/Pagination'
 describe('Pagination', () => {
   it('renders nothing when totalItems <= itemsPerPage', () => {
     const { container } = render(
-      <Pagination currentPage={1} totalItems={5} onPageChange={() => {}} />
+      <Pagination currentPage={1} totalItems={5} onPageChange={() => { }} />
     )
     expect(container.innerHTML).toBe('')
   })
 
   it('renders correct number of page buttons', () => {
     render(
-      <Pagination currentPage={1} totalItems={25} onPageChange={() => {}} itemsPerPage={10} />
+      <Pagination currentPage={1} totalItems={25} onPageChange={() => { }} itemsPerPage={10} />
     )
     // 3 pages: 1, 2, 3
     expect(screen.getByText('1')).toBeInTheDocument()
@@ -35,7 +35,7 @@ describe('Pagination', () => {
 
   it('disables prev button on first page', () => {
     render(
-      <Pagination currentPage={1} totalItems={30} onPageChange={() => {}} itemsPerPage={10} />
+      <Pagination currentPage={1} totalItems={30} onPageChange={() => { }} itemsPerPage={10} />
     )
 
     const prevBtn = screen.getByLabelText('Halaman sebelumnya')
@@ -44,7 +44,7 @@ describe('Pagination', () => {
 
   it('disables next button on last page', () => {
     render(
-      <Pagination currentPage={3} totalItems={30} onPageChange={() => {}} itemsPerPage={10} />
+      <Pagination currentPage={3} totalItems={30} onPageChange={() => { }} itemsPerPage={10} />
     )
 
     const nextBtn = screen.getByLabelText('Halaman berikutnya')
@@ -53,10 +53,10 @@ describe('Pagination', () => {
 
   it('highlights current page', () => {
     render(
-      <Pagination currentPage={2} totalItems={30} onPageChange={() => {}} itemsPerPage={10} />
+      <Pagination currentPage={2} totalItems={30} onPageChange={() => { }} itemsPerPage={10} />
     )
 
     const page2Btn = screen.getByText('2')
-    expect(page2Btn.className).toContain('bg-primary')
+    expect(page2Btn.className).toContain('bg-brand-50')
   })
 })
