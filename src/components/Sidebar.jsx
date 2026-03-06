@@ -12,7 +12,6 @@ const navItems = [
   { to: '/admin', icon: SquaresFour, label: 'Dashboard', exact: true },
   { to: '/admin/orders', icon: ClipboardText, label: 'Pesanan Tugas', badgeKey: 'orders' },
   { to: '/admin/layanan', icon: BookOpen, label: 'Layanan Joki' },
-  { to: '/katalog', icon: Storefront, label: 'Katalog' },
   { to: '/admin/requests', icon: Tray, label: 'Custom Requests', badgeKey: 'requests' },
   { to: '/admin/keuangan', icon: CurrencyDollar, label: 'Laporan Pemasukan' },
 ]
@@ -80,17 +79,6 @@ export default function Sidebar() {
             )
           })}
         </nav>
-
-        {/* Pro Banner */}
-        <div className="mt-8 mb-6 relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-400 to-brand-600 p-5 text-white shadow-md">
-          <div className="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 border border-white/20 rounded-full opacity-50 pointer-events-none" />
-          <div className="absolute bottom-0 left-0 -ml-4 -mb-4 w-16 h-16 border border-white/20 rounded-full opacity-50 pointer-events-none" />
-          <h4 className="font-semibold mb-1 relative z-10 text-sm">Joki Elite —</h4>
-          <p className="text-xs text-white/90 mb-4 relative z-10">Tingkatkan visibilitas layananmu!</p>
-          <button className="w-full bg-white text-brand-600 hover:bg-brand-50 font-medium py-2 rounded-xl text-sm transition-colors relative z-10 shadow-sm">
-            Upgrade Akun
-          </button>
-        </div>
 
         {/* Settings & Logout */}
         <NavLink

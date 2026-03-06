@@ -13,10 +13,14 @@ import {
 } from '@phosphor-icons/react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 
+import { useAuth } from '../../contexts/AuthContext'
+
 const STATUS_PEKERJAAN = ['Menunggu Diproses', 'Sedang Dikerjakan', 'Selesai', 'Batal']
 
 export default function AdminOrders() {
+    const { user } = useAuth()
     const [orders, setOrders] = useState([])
+    const [unreadChats, setUnreadChats] = useState(new Set())
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState('Semua')
     const [search, setSearch] = useState('')
@@ -64,6 +68,18 @@ export default function AdminOrders() {
             ])
             setTotalOrderCount(allCount || 0)
             setPendingVerifyCount(pvCount || 0)
+
+            if (user) {
+                const { data: notifData } = await supabase
+                    .from('notifications')
+                    .select('data')
+                    .eq('user_id', user.id)
+                    .eq('type', 'chat_message')
+                    .eq('is_read', false)
+                if (notifData) {
+                    setUnreadChats(new Set(notifData.map(n => n.data?.order_id).filter(Boolean)))
+                }
+            }
 
             if (searchTerm.trim()) {
                 const { data, error } = await supabase.rpc('search_orders', {
@@ -374,7 +390,22 @@ export default function AdminOrders() {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="py-4 px-2 text-slate-600 whitespace-nowrap">{order.profiles?.full_name || '-'}</td>
+                                                <td className="py-4 px-2 text-slate-600 whitespace-nowrap">
+                                                    <div>{order.profiles?.full_name || '-'}</div>
+                                                    {order.rating && (
+                                                        <div className="flex flex-col mt-1">
+                                                            <div className="flex items-center gap-1">
+                                                                <Star weight="fill" className="w-3 h-3 text-amber-500" />
+                                                                <span className="text-xs text-slate-500 font-medium">{order.rating}/5</span>
+                                                            </div>
+                                                            {order.review && (
+                                                                <span className="text-[10px] text-slate-400 max-w-[120px] truncate block" title={order.review}>
+                                                                    "{order.review}"
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </td>
                                                 <td className="py-4 px-2 whitespace-nowrap">
                                                     <span className={deadlineClass}>
                                                         {order.tenggat_waktu ? new Date(order.tenggat_waktu).toLocaleDateString('id-ID') : '-'}
@@ -403,8 +434,11 @@ export default function AdminOrders() {
                                                                 <UploadSimple weight="bold" className="w-3.5 h-3.5" />
                                                             </button>
                                                         )}
-                                                        <button onClick={() => setChatOrder(order)} className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-all" title="Chat">
+                                                        <button onClick={() => setChatOrder(order)} className="relative p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-all" title="Chat">
                                                             <ChatCircle weight="bold" className="w-3.5 h-3.5" />
+                                                            {unreadChats.has(order.id) && (
+                                                                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full border border-white"></span>
+                                                            )}
                                                         </button>
                                                         <button onClick={() => { setCatatanModal(order); setCatatanText(order.catatan_internal || '') }}
                                                             className={`p-1.5 rounded-lg transition-all ${order.catatan_internal ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'}`}
@@ -450,7 +484,22 @@ export default function AdminOrders() {
                                             <StatusBadge status={order.status_pekerjaan} />
                                         </div>
                                         {/* Row 2: Client */}
-                                        <p className="text-sm text-slate-500">{order.profiles?.full_name || '-'}</p>
+                                        <div>
+                                            <p className="text-sm text-slate-500">{order.profiles?.full_name || '-'}</p>
+                                            {order.rating && (
+                                                <div className="flex flex-col mt-0.5">
+                                                    <div className="flex items-center gap-1">
+                                                        <Star weight="fill" className="w-3 h-3 text-amber-500" />
+                                                        <span className="text-xs text-slate-500 font-medium">{order.rating}/5</span>
+                                                    </div>
+                                                    {order.review && (
+                                                        <span className="text-xs text-slate-400 line-clamp-2 mt-0.5" title={order.review}>
+                                                            "{order.review}"
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                         {/* Row 3: Price + payment */}
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm font-bold text-brand-600">{formatRupiah(order.harga_final)}</span>
@@ -489,8 +538,11 @@ export default function AdminOrders() {
                                                     <UploadSimple weight="bold" className="w-4 h-4" />
                                                 </button>
                                             )}
-                                            <button onClick={() => setChatOrder(order)} className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-all" title="Chat">
+                                            <button onClick={() => setChatOrder(order)} className="relative p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-all" title="Chat">
                                                 <ChatCircle weight="bold" className="w-4 h-4" />
+                                                {unreadChats.has(order.id) && (
+                                                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                                                )}
                                             </button>
                                             <button onClick={() => { setCatatanModal(order); setCatatanText(order.catatan_internal || '') }}
                                                 className={`p-2 rounded-lg transition-all ${order.catatan_internal ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'}`}

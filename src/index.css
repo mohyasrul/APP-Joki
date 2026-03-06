@@ -29,6 +29,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Ensure inputs don't trigger iOS zoom (min 16px) */

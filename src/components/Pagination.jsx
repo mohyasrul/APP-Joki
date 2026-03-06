@@ -28,9 +28,9 @@ export default function Pagination({ currentPage, totalItems, onPageChange, item
   const to = Math.min(currentPage * itemsPerPage, totalItems)
 
   return (
-    <div className="flex items-center justify-between mt-6 pt-6 border-t border-slate-100">
+    <div className="flex flex-col md:flex-row items-center justify-between mt-6 pt-6 gap-4 border-t border-slate-100">
       {/* Left: info */}
-      <span className="text-xs text-slate-500">
+      <span className="hidden md:block text-xs text-slate-500">
         Menampilkan {from} hingga {to} dari {totalItems} hasil
       </span>
 
@@ -58,11 +58,10 @@ export default function Pagination({ currentPage, totalItems, onPageChange, item
           <button
             key={page}
             onClick={() => handlePageChange(page)}
-            className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm transition-colors ${
-              page === currentPage
-                ? 'bg-brand-50 text-brand-600 font-medium'
-                : 'text-slate-600 hover:bg-slate-50'
-            }`}
+            className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm transition-colors ${page === currentPage
+              ? 'bg-brand-50 text-brand-600 font-medium'
+              : 'text-slate-600 hover:bg-slate-50'
+              }`}
           >
             {page}
           </button>
@@ -87,8 +86,13 @@ export default function Pagination({ currentPage, totalItems, onPageChange, item
         </button>
       </div>
 
+      {/* Mobile Page indicator (Bottom) */}
+      <span className="md:hidden text-xs text-slate-500 text-center">
+        Menampilkan {from}-{to} dari {totalItems}
+      </span>
+
       {/* Right: per-page selector */}
-      <div className="flex items-center gap-2 text-xs text-slate-500">
+      <div className="hidden md:flex items-center gap-2 text-xs text-slate-500">
         <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-slate-100">
           <select
             value={itemsPerPage}

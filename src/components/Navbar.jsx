@@ -181,7 +181,7 @@ export default function Navbar() {
 
             {/* Logo (Left) */}
             <div className="flex items-center gap-3 z-10 shrink-0">
-                <NavLink to="/katalog" className="flex items-center gap-2 md:gap-3">
+                <NavLink to={isAdmin ? '/admin' : '/katalog'} className="flex items-center gap-2 md:gap-3">
                     <div className="text-slate-900">
                         <GraduationCap weight="fill" className="w-7 h-7 md:w-8 md:h-8" />
                     </div>
