@@ -35,10 +35,11 @@ export default class ErrorBoundary extends Component {
                         <p className="text-sm text-slate-500 mb-6">
                             Maaf, terjadi kesalahan yang tidak terduga. Silakan coba lagi.
                         </p>
-                        {import.meta.env.DEV && this.state.error && (
-                            <pre className="bg-white rounded-xl border border-slate-100 p-4 text-xs text-red-500 text-left mb-6 overflow-auto max-h-40">
-                                {this.state.error.message}
-                            </pre>
+                        {this.state.error && (
+                            <div className="bg-white rounded-xl border border-slate-100 p-4 text-xs text-red-500 text-left mb-6 overflow-auto max-h-64">
+                                <p className="font-bold mb-2">{this.state.error.message}</p>
+                                <pre className="whitespace-pre-wrap">{this.state.error.stack}</pre>
+                            </div>
                         )}
                         <div className="flex flex-col sm:flex-row gap-3 justify-center">
                             <button
