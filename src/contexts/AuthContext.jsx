@@ -18,7 +18,10 @@ export function AuthProvider({ children }) {
             else setLoading(false)
         })
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'PASSWORD_RECOVERY') {
+                localStorage.setItem('awaiting_password_reset', 'true')
+            }
             setUser(session?.user ?? null)
             if (session?.user) {
                 fetchProfile(session.user.id)
@@ -105,6 +108,8 @@ export function AuthProvider({ children }) {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
 
+        localStorage.removeItem('awaiting_password_reset') // Clear lock on manual login
+
         // Push subscription is now handled by PushPrompt component
         // (requires user gesture on mobile Chrome)
 
@@ -116,6 +121,7 @@ export function AuthProvider({ children }) {
             await unsubscribeFromPush(user.id).catch(() => { })
         }
         await supabase.auth.signOut()
+        localStorage.removeItem('awaiting_password_reset')
         setUser(null)
         setProfile(null)
     }

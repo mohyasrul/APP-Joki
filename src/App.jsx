@@ -44,10 +44,16 @@ function AppRoutes() {
   const location = useLocation()
   const navigate = useNavigate()
 
-  // Intercept recovery links on any route (e.g. if Supabase defaults to Site URL)
-  // This prevents the user from being logged in and skipped past the reset form.
+  // Intercept recovery links on any route, AND prevent multi-tab auto-login.
+  // 1. If we detect a recovery code/hash, set a lock in localStorage.
+  // 2. If the lock is active, force any authenticated tab to stay on /reset-password.
   useEffect(() => {
     const hasRecovery = location.hash.includes('type=recovery') || location.search.includes('code=');
+    if (hasRecovery) {
+      localStorage.setItem('awaiting_password_reset', 'true');
+    }
+
+    // Auto-navigate to reset-password if they clicked the email link but Supabase redirected to /
     if (hasRecovery && location.pathname !== '/reset-password') {
       navigate('/reset-password' + location.search + location.hash, { replace: true });
     }
@@ -59,6 +65,13 @@ function AppRoutes() {
         <div role="status" aria-label="Memuat aplikasi" className="w-10 h-10 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
       </div>
     )
+  }
+
+  const isAwaitingReset = localStorage.getItem('awaiting_password_reset') === 'true';
+
+  // [CRITICAL FIX]: Stop Old Tabs from suddenly jumping to /katalog when AuthContext syncs the recovery session
+  if (user && isAwaitingReset && location.pathname !== '/reset-password') {
+    return <Navigate to="/reset-password" replace />;
   }
 
   return (

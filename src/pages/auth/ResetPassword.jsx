@@ -29,10 +29,9 @@ export default function ResetPassword() {
             }
         })
 
-        // Dengarkan event PASSWORD_RECOVERY
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'PASSWORD_RECOVERY') {
-                // User siap untuk update password
+                localStorage.setItem('awaiting_password_reset', 'true')
                 setSessionError(null)
             }
         })
@@ -49,12 +48,20 @@ export default function ResetPassword() {
         setLoading(true)
         try {
             await updatePassword(password)
+            localStorage.removeItem('awaiting_password_reset') // Clear lock upon success
             setSuccess(true)
         } catch (err) {
             toast.error(err.message)
         } finally {
             setLoading(false)
         }
+    }
+
+    const { signOut } = useAuth()
+    const handleCancel = async () => {
+        setLoading(true)
+        await signOut() // This clears the session and the localStorage lock
+        navigate('/login')
     }
 
     if (sessionError) {
@@ -126,6 +133,15 @@ export default function ResetPassword() {
                                 className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-2xl shadow-sm text-sm font-bold text-white bg-brand-600 hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all mt-6"
                             >
                                 {loading ? <SpinnerGap className="w-5 h-5 animate-spin" /> : 'Simpan Kata Sandi'}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={handleCancel}
+                                disabled={loading}
+                                className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-2xl shadow-sm text-sm font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all mt-3"
+                            >
+                                Batalkan & Keluar
                             </button>
                         </form>
                     )}
