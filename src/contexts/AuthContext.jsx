@@ -113,17 +113,29 @@ export function AuthProvider({ children }) {
 
     const signOut = async () => {
         if (user && isPushSupported()) {
-            await unsubscribeFromPush(user.id).catch(() => {})
+            await unsubscribeFromPush(user.id).catch(() => { })
         }
         await supabase.auth.signOut()
         setUser(null)
         setProfile(null)
     }
 
+    const resetPassword = async (email) => {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + '/reset-password',
+        })
+        if (error) throw error
+    }
+
+    const updatePassword = async (newPassword) => {
+        const { error } = await supabase.auth.updateUser({ password: newPassword })
+        if (error) throw error
+    }
+
     const isAdmin = profile?.role === 'admin'
 
     return (
-        <AuthContext.Provider value={{ user, profile, setProfile, loading, signUp, signIn, signOut, isAdmin }}>
+        <AuthContext.Provider value={{ user, profile, setProfile, loading, signUp, signIn, signOut, resetPassword, updatePassword, isAdmin }}>
             {children}
         </AuthContext.Provider>
     )

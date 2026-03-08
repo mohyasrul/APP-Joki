@@ -45,7 +45,7 @@ export default function OrderChat({ orderId }) {
             })
             .subscribe()
 
-        return () => supabase.removeChannel(channel)
+        return () => { supabase.removeChannel(channel) }
     }, [orderId])
 
     useEffect(() => {

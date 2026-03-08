@@ -50,6 +50,8 @@ export default defineConfig({
       },
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Exclude root index.html from precaching since we rely on NetworkOnly for navigation,
+        // but ensure offline.html gets cached
       },
       devOptions: {
         enabled: true,

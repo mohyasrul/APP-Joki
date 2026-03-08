@@ -25,6 +25,8 @@ const Keuangan = lazy(() => import('./pages/admin/Keuangan'))
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'))
 const AdminRequests = lazy(() => import('./pages/admin/AdminRequests'))
 
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'))
+
 function PageLoader() {
   return (
     <div className="min-h-screen flex items-center justify-center">
@@ -54,6 +56,8 @@ function AppRoutes() {
         <Route path="/" element={user ? <Navigate to={isAdmin ? '/admin' : '/katalog'} replace /> : <LandingPage />} />
         <Route path="/login" element={user ? <Navigate to={isAdmin ? '/admin' : '/katalog'} replace /> : <Login />} />
         <Route path="/register" element={user ? <Navigate to="/katalog" replace /> : <Register />} />
+        <Route path="/forgot-password" element={user ? <Navigate to="/katalog" replace /> : <ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Client */}
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>

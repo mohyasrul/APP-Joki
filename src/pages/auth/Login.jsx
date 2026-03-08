@@ -111,10 +111,10 @@ export default function Login() {
                         </div>
 
                         <div className="flex justify-end">
-                            <button type="button" onClick={() => { setForgotEmail(email); setShowForgot(true); setForgotSent(false); setForgotError(''); }}
+                            <Link to="/forgot-password"
                                 className="text-xs text-brand-600 hover:text-brand-700 transition-colors">
                                 Lupa Password?
-                            </button>
+                            </Link>
                         </div>
 
                         <button
@@ -140,40 +140,6 @@ export default function Login() {
                         </Link>
                     </p>
                 </div>
-
-                {/* Forgot Password Modal */}
-                <Modal open={showForgot} onClose={() => setShowForgot(false)} title={forgotSent ? null : 'Lupa Password'} maxWidth="max-w-sm">
-                    {forgotSent ? (
-                        <div className="text-center py-2">
-                            <CheckCircle weight="fill" className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-                            <h3 className="text-lg font-bold text-slate-800 mb-2">Email Terkirim!</h3>
-                            <p className="text-sm text-slate-500 mb-4">Cek inbox <span className="text-brand-600 font-medium">{forgotEmail}</span> untuk link reset password.</p>
-                            <button onClick={() => setShowForgot(false)}
-                                className="w-full py-2.5 rounded-xl bg-brand-50 text-brand-600 font-medium text-sm hover:bg-brand-100 transition-all">
-                                Kembali ke Login
-                            </button>
-                        </div>
-                    ) : (
-                        <form onSubmit={handleForgotPassword} className="space-y-4">
-                            <p className="text-sm text-slate-500">Masukkan email akunmu, kami akan kirim link untuk reset password.</p>
-                            {forgotError && (
-                                <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-500 text-sm">
-                                    <WarningCircle weight="bold" className="w-4 h-4 shrink-0" />{forgotError}
-                                </div>
-                            )}
-                            <div className="relative">
-                                <Envelope weight="bold" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                                <input type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)}
-                                    className={inputClass}
-                                    placeholder="email@example.com" required autoFocus />
-                            </div>
-                            <button type="submit" disabled={forgotLoading}
-                                className="w-full py-3 rounded-xl bg-brand-500 text-white font-semibold hover:bg-brand-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                                {forgotLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Kirim Link Reset'}
-                            </button>
-                        </form>
-                    )}
-                </Modal>
             </div>
         </div>
     )

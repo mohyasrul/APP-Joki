@@ -162,7 +162,7 @@ export default function OrderDetail() {
     if (loading) return <div className="flex items-center justify-center py-20"><SpinnerGap className="w-8 h-8 animate-spin text-brand-500" /></div>
     if (!order) return <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-12 text-center"><WarningCircle weight="bold" className="w-12 h-12 text-amber-400 mx-auto mb-4" /><h3 className="text-lg font-medium text-slate-600">Order tidak ditemukan</h3></div>
 
-    const canCancel = order.status_pekerjaan === 'Menunggu Diproses'
+    const canCancel = order.status_pekerjaan === 'Menunggu Diproses' || order.status_pembayaran === 'Belum Bayar'
     const canRate = order.status_pekerjaan === 'Selesai' && !order.rating
     const canRevisi = order.status_pekerjaan === 'Selesai' && (order.jumlah_revisi || 0) < (order.max_revisi || 2) && !order.rating
     const revisiLeft = (order.max_revisi || 2) - (order.jumlah_revisi || 0)
@@ -574,7 +574,7 @@ export default function OrderDetail() {
                 <div className="text-center">
                     <Prohibit weight="bold" className="w-12 h-12 text-red-400 mx-auto mb-3" />
                     <h3 className="text-lg font-bold text-slate-800 mb-2">Batalkan Pesanan?</h3>
-                    <p className="text-sm text-slate-500 mb-6">Tidak bisa dibatalkan.</p>
+                    <p className="text-sm text-slate-500 mb-6">Order yang dibatalkan tidak bisa dilanjutkan kembali. Yakin ingin membatalkan?</p>
                     <div className="flex gap-3">
                         <button onClick={() => setShowCancelConfirm(false)} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-all">Tidak</button>
                         <button onClick={handleCancelOrder} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-all">Ya, Batalkan</button>
