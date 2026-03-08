@@ -25,6 +25,7 @@ const Keuangan = lazy(() => import('./pages/admin/Keuangan'))
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'))
 const AdminRequests = lazy(() => import('./pages/admin/AdminRequests'))
 
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
 const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'))
 
 function PageLoader() {
