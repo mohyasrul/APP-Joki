@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/Toast'
@@ -8,16 +8,29 @@ export default function ForgotPassword() {
     const [email, setEmail] = useState('')
     const [loading, setLoading] = useState(false)
     const [sent, setSent] = useState(false)
+    const [cooldown, setCooldown] = useState(0) // Timer in seconds
     const { resetPassword } = useAuth()
     const toast = useToast()
 
+    // Handle timer countdown
+    useEffect(() => {
+        let timer;
+        if (cooldown > 0) {
+            timer = setInterval(() => {
+                setCooldown((prev) => prev - 1)
+            }, 1000)
+        }
+        return () => clearInterval(timer)
+    }, [cooldown])
+
     const handleSubmit = async (e) => {
         e.preventDefault()
-        if (!email) return
+        if (!email || cooldown > 0) return
         setLoading(true)
         try {
             await resetPassword(email)
             setSent(true)
+            setCooldown(60) // Start 60-second cooldown
         } catch (err) {
             toast.error(err.message)
         } finally {
@@ -47,9 +60,26 @@ export default function ForgotPassword() {
                             <p className="text-sm text-slate-600 mb-6">
                                 Kami telah mengirimkan link untuk mereset kata sandi ke <span className="font-semibold text-slate-800">{email}</span>. Link ini aktif selama 24 jam.
                             </p>
-                            <Link to="/login" className="inline-block text-sm font-semibold text-brand-600 hover:text-brand-500 transition-colors">
-                                Kembali ke Halaman Login
-                            </Link>
+
+                            <div className="flex flex-col gap-3">
+                                <button
+                                    onClick={handleSubmit}
+                                    disabled={loading || cooldown > 0}
+                                    className="w-full flex justify-center items-center py-3 px-4 rounded-xl text-sm font-bold text-brand-600 bg-brand-50 hover:bg-brand-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? (
+                                        <SpinnerGap className="w-5 h-5 animate-spin" />
+                                    ) : cooldown > 0 ? (
+                                        `Kirim Ulang (${cooldown}s)`
+                                    ) : (
+                                        'Kirim Ulang Email'
+                                    )}
+                                </button>
+
+                                <Link to="/login" className="inline-block text-sm font-semibold text-slate-500 hover:text-slate-700 transition-colors mt-2">
+                                    Kembali ke Halaman Login
+                                </Link>
+                            </div>
                         </div>
                     ) : (
                         <form className="space-y-5" onSubmit={handleSubmit}>

@@ -7,6 +7,7 @@ import { LockKey, SpinnerGap, CheckCircle } from '@phosphor-icons/react'
 
 export default function ResetPassword() {
     const [password, setPassword] = useState('')
+    const [confirmPassword, setConfirmPassword] = useState('')
     const [loading, setLoading] = useState(false)
     const [success, setSuccess] = useState(false)
     const [sessionError, setSessionError] = useState(null)
@@ -43,6 +44,10 @@ export default function ResetPassword() {
         e.preventDefault()
         if (password.length < 6) {
             toast.error('Kata sandi harus minimal 6 karakter')
+            return
+        }
+        if (password !== confirmPassword) {
+            toast.error('Kata sandi tidak cocok')
             return
         }
         setLoading(true)
@@ -102,9 +107,9 @@ export default function ResetPassword() {
                                 <CheckCircle weight="fill" className="w-8 h-8" />
                             </div>
                             <h3 className="text-lg font-bold text-slate-800 mb-2">Berhasil!</h3>
-                            <p className="text-sm text-slate-600 mb-6">Kata sandi Anda telah berhasil diperbarui. Silakan login menggunakan kata sandi yang baru.</p>
-                            <Link to="/login" className="inline-block w-full py-3 rounded-2xl bg-brand-500 text-white font-bold hover:bg-brand-600 transition-colors">
-                                Lanjut Login
+                            <p className="text-sm text-slate-600 mb-6">Kata sandi Anda telah berhasil diperbarui. Anda sekarang dapat masuk kembali ke aplikasi.</p>
+                            <Link to="/katalog" className="inline-block w-full py-3 rounded-2xl bg-brand-500 text-white font-bold hover:bg-brand-600 transition-colors">
+                                Masuk Dasbor
                             </Link>
                         </div>
                     ) : (
@@ -127,9 +132,27 @@ export default function ResetPassword() {
                                 </div>
                             </div>
 
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1.5 pl-1">Konfirmasi Kata Sandi <span className="text-red-500">*</span></label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <LockKey className="h-5 w-5 text-slate-400" />
+                                    </div>
+                                    <input
+                                        type="password"
+                                        required
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        className="block w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all sm:text-sm font-medium"
+                                        placeholder="Ketik ulanq password baru"
+                                        minLength="6"
+                                    />
+                                </div>
+                            </div>
+
                             <button
                                 type="submit"
-                                disabled={loading || password.length < 6}
+                                disabled={loading || password.length < 6 || confirmPassword.length < 6}
                                 className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-2xl shadow-sm text-sm font-bold text-white bg-brand-600 hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all mt-6"
                             >
                                 {loading ? <SpinnerGap className="w-5 h-5 animate-spin" /> : 'Simpan Kata Sandi'}
