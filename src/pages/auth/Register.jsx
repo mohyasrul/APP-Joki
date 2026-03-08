@@ -96,16 +96,16 @@ export default function Register() {
                             <div className="relative">
                                 <User weight="bold" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                 <input type="text" name="fullName" value={form.fullName} onChange={handleChange}
-                                    className={inputClass} placeholder="John Doe" required />
+                                    className={inputClass} placeholder="Masukkan Nama Anda" required />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-600 mb-1.5">Email</label>
+                            <label className="block text-sm font-medium text-slate-600 mb-1.5">Email (Perlu Verifikasi)</label>
                             <div className="relative">
                                 <Envelope weight="bold" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                 <input type="email" name="email" value={form.email} onChange={handleChange}
-                                    className={inputClass} placeholder="email@example.com" required />
+                                    className={inputClass} placeholder="Masukkan Email Anda" required />
                             </div>
                         </div>
 
@@ -114,7 +114,7 @@ export default function Register() {
                             <div className="relative">
                                 <Phone weight="bold" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                 <input type="tel" name="phone" value={form.phone} onChange={handleChange}
-                                    className={inputClass} placeholder="08xxxxxxxxxx" />
+                                    className={inputClass} placeholder="Masukkan No. HP Anda" />
                             </div>
                         </div>
 

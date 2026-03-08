@@ -62,7 +62,7 @@ export default function Login() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className={inputClass}
-                                    placeholder="email@example.com"
+                                    placeholder="Masukkan Email Anda"
                                     required
                                 />
                             </div>

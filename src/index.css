@@ -48,6 +48,12 @@ textarea {
   }
 }
 
+/* Remove default password reveal eye icon in Edge/IE/Chrome */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
 /* Custom scrollbar — WebKit */
 ::-webkit-scrollbar {
   width: 8px;
@@ -193,4 +199,75 @@ textarea {
 .touch-target {
   min-height: 44px;
   min-width: 44px;
+}
+
+/* =============================================
+   Landing Page Reveal & Animations
+   ============================================= */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.delay-100 {
+  transition-delay: 100ms;
+}
+
+.delay-200 {
+  transition-delay: 200ms;
+}
+
+.delay-300 {
+  transition-delay: 300ms;
+}
+
+.delay-400 {
+  transition-delay: 400ms;
+}
+
+.delay-500 {
+  transition-delay: 500ms;
+}
+
+.delay-600 {
+  transition-delay: 600ms;
+}
+
+.delay-700 {
+  transition-delay: 700ms;
+}
+
+@keyframes aurora-bg {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+.animate-aurora {
+  animation: aurora-bg 15s ease-in-out infinite alternate;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--color-brand-500), #0ea5e9);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
