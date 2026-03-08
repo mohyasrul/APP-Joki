@@ -9,7 +9,7 @@ export default function ForgotPassword() {
     const [loading, setLoading] = useState(false)
     const [sent, setSent] = useState(false)
     const [cooldown, setCooldown] = useState(0) // Timer in seconds
-    const { resetPassword } = useAuth()
+    const { resetPassword, checkEmailExists } = useAuth()
     const toast = useToast()
 
     // Handle timer countdown
@@ -28,6 +28,14 @@ export default function ForgotPassword() {
         if (!email || cooldown > 0) return
         setLoading(true)
         try {
+            // Validate email existence securely before initiating reset
+            const isExist = await checkEmailExists(email)
+            if (!isExist) {
+                toast.error('Tidak ada akun Jokskuy yang terdaftar dengan email ini.')
+                setLoading(false)
+                return
+            }
+
             await resetPassword(email)
             setSent(true)
             setCooldown(60) // Start 60-second cooldown

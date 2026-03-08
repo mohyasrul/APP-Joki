@@ -133,6 +133,12 @@ export function AuthProvider({ children }) {
         if (error) throw error
     }
 
+    const checkEmailExists = async (email) => {
+        const { data, error } = await supabase.rpc('check_email_exists', { email_input: email })
+        if (error) throw error
+        return data
+    }
+
     const updatePassword = async (newPassword) => {
         const { error } = await supabase.auth.updateUser({ password: newPassword })
         if (error) throw error
@@ -141,7 +147,12 @@ export function AuthProvider({ children }) {
     const isAdmin = profile?.role === 'admin'
 
     return (
-        <AuthContext.Provider value={{ user, profile, setProfile, loading, signUp, signIn, signOut, resetPassword, updatePassword, isAdmin }}>
+        <AuthContext.Provider value={{
+            user, profile, setProfile, loading,
+            signUp, signIn, signOut,
+            resetPassword, checkEmailExists, updatePassword,
+            isAdmin
+        }}>
             {children}
         </AuthContext.Provider>
     )
