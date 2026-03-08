@@ -19,6 +19,14 @@ export default function CustomRequest() {
     const handleSubmit = async (e) => {
         e.preventDefault()
         if (!form.judul.trim()) { toast.error('Judul tidak boleh kosong'); return }
+
+        let bMin = form.budget_min ? parseInt(form.budget_min.toString().replace(/\./g, '')) : null
+        let bMax = form.budget_max ? parseInt(form.budget_max.toString().replace(/\./g, '')) : null
+        if (bMin !== null && bMax !== null && bMin >= bMax) {
+            toast.error('Budget maksimum harus lebih besar dari budget minimum')
+            return
+        }
+
         setLoading(true)
         try {
             const uploadedFiles = []
@@ -46,15 +54,38 @@ export default function CustomRequest() {
         finally { setLoading(false) }
     }
 
-    const handleFileChange = (e) => {
+    const handleFileChange = async (e) => {
         const files = Array.from(e.target.files)
         const remaining = MAX_FILES - attachments.length
-        const valid = files.filter(f => {
-            if (f.size > MAX_SIZE) { toast.error(`${f.name} terlalu besar (max 5MB)`); return false }
-            return true
-        }).slice(0, remaining)
+        const filesToProcess = files.slice(0, remaining)
         if (files.length > remaining) toast.error(`Maksimal ${MAX_FILES} file`)
-        setAttachments(prev => [...prev, ...valid])
+
+        const processedFiles = []
+        let toastId = null
+        if (filesToProcess.some(f => f.type.startsWith('image/') && f.size > 1024 * 1024)) {
+            toastId = toast.info('Memproses lampiran...', { autoClose: false })
+        }
+
+        for (let f of filesToProcess) {
+            let fileToUpload = f
+            if (f.type.startsWith('image/') && f.size > 1024 * 1024) {
+                try {
+                    const { default: imageCompression } = await import('browser-image-compression')
+                    const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true }
+                    fileToUpload = await imageCompression(f, options)
+                } catch (err) {
+                    console.error('Compression error:', err)
+                }
+            }
+            if (fileToUpload.size <= MAX_SIZE) {
+                processedFiles.push(fileToUpload)
+            } else {
+                toast.error(`${f.name} terlalu besar setelah diproses (max 5MB)`)
+            }
+        }
+
+        if (toastId) toast.dismiss(toastId)
+        setAttachments(prev => [...prev, ...processedFiles])
         e.target.value = ''
     }
 

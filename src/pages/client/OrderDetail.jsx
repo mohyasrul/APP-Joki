@@ -13,6 +13,7 @@ import {
     ArrowLeft, UploadSimple, Receipt, WarningCircle,
     Image as ImageIcon, SpinnerGap, Prohibit, DownloadSimple, Star, ArrowCounterClockwise, Tag, FileText, FilePdf, FileZip, FileVideo, Question, X, Paperclip, Copy
 } from '@phosphor-icons/react'
+import imageCompression from 'browser-image-compression'
 
 export default function OrderDetail() {
     const { id } = useParams()
@@ -83,13 +84,27 @@ export default function OrderDetail() {
         }
     }
 
-    const handleSelectBukti = (e) => {
+    const handleSelectBukti = async (e) => {
         const file = e.target.files[0]
         if (!file) return
         if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(file.type)) { toast.error('Hanya file gambar (JPG, PNG, WebP)'); return }
-        if (file.size > 5 * 1024 * 1024) { toast.error('Max 5MB'); return }
-        setPendingFile(file)
-        setPendingPreview(URL.createObjectURL(file))
+
+        let fileToUpload = file;
+        if (file.size > 1024 * 1024) {
+            const toastId = toast.info('Mengkompresi gambar...', { autoClose: false })
+            try {
+                const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true }
+                fileToUpload = await imageCompression(file, options)
+                toast.dismiss(toastId)
+            } catch (error) {
+                console.error('Compression error:', error)
+                toast.dismiss(toastId)
+            }
+        }
+
+        if (fileToUpload.size > 5 * 1024 * 1024) { toast.error('Max 5MB'); return }
+        setPendingFile(fileToUpload)
+        setPendingPreview(URL.createObjectURL(fileToUpload))
         setShowUploadConfirm(true)
         e.target.value = ''
     }

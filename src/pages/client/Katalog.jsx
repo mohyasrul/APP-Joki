@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { formatRupiah } from '../../lib/utils'
-import { Storefront, MagnifyingGlass, BookOpen, ArrowRight, Tag, Funnel, WarningCircle, ArrowsClockwise, Clock, X, Megaphone } from '@phosphor-icons/react'
+import { Storefront, MagnifyingGlass, BookOpen, ArrowRight, Tag, Funnel, WarningCircle, ArrowsClockwise, Clock, X, Megaphone, Star } from '@phosphor-icons/react'
 import Pagination, { ITEMS_PER_PAGE } from '../../components/Pagination'
 import StatusBadge from '../../components/StatusBadge'
 import LayananDrawer from '../../components/LayananDrawer'
@@ -33,9 +33,18 @@ export default function Katalog() {
     const fetchLayanan = async () => {
         try {
             setFetchError(null)
-            const { data, error } = await supabase.from('layanan').select('*').eq('tersedia', true).order('created_at', { ascending: false })
-            if (error) throw error
-            setLayanan(data || [])
+            const [layananRes, statsRes] = await Promise.all([
+                supabase.from('layanan').select('*').eq('tersedia', true).order('created_at', { ascending: false }),
+                supabase.from('layanan_stats_view').select('*')
+            ])
+            if (layananRes.error) throw layananRes.error
+
+            const statsMap = {}
+            if (statsRes.data) {
+                statsRes.data.forEach(s => statsMap[s.layanan_id] = s)
+            }
+            const dataWithStats = (layananRes.data || []).map(l => ({ ...l, stats: statsMap[l.id] || { avg_rating: 0, total_orders: 0 } }))
+            setLayanan(dataWithStats)
         } catch (err) {
             console.error('Failed to fetch layanan:', err)
             setFetchError('Gagal memuat katalog. Silakan coba lagi.')
@@ -157,6 +166,13 @@ export default function Katalog() {
                                 </div>
                             </div>
                             <h3 className="text-base md:text-lg font-semibold text-slate-800 mb-2">{item.judul_tugas}</h3>
+                            {item.stats && item.stats.total_orders > 0 && (
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Star weight="fill" className="w-4 h-4 text-amber-500" />
+                                    <span className="text-sm font-semibold text-slate-700">{item.stats.avg_rating}</span>
+                                    <span className="text-xs text-slate-400">({item.stats.total_orders} terjual)</span>
+                                </div>
+                            )}
                             <p className="text-sm text-slate-500 mb-4 line-clamp-2">{item.deskripsi || 'Tidak ada deskripsi'}</p>
                             <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100">
                                 <div>

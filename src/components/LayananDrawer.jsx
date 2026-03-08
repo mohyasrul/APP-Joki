@@ -1,11 +1,32 @@
-import { useEffect } from 'react'
-import { X, Tag, Clock, ArrowRight, CheckCircle } from '@phosphor-icons/react'
+import { useEffect, useState } from 'react'
+import { X, Tag, Clock, ArrowRight, CheckCircle, Star } from '@phosphor-icons/react'
 import { formatRupiah } from '../lib/utils'
 import { getKategoriIcon } from '../lib/constants'
+import { supabase } from '../lib/supabase'
 
 export default function LayananDrawer({ layanan, onClose, onOrder }) {
+    const [reviews, setReviews] = useState([])
+    const [loadingReviews, setLoadingReviews] = useState(false)
+
     useEffect(() => {
         if (!layanan) return
+
+        const fetchReviews = async () => {
+            setLoadingReviews(true)
+            const { data } = await supabase
+                .from('orders')
+                .select('rating, review, profiles(full_name)')
+                .eq('layanan_id', layanan.id)
+                .not('rating', 'is', null)
+                .gte('rating', 4)
+                .order('created_at', { ascending: false })
+                .limit(3)
+
+            setReviews(data || [])
+            setLoadingReviews(false)
+        }
+        fetchReviews()
+
         document.body.style.overflow = 'hidden'
         const handleEscape = (e) => { if (e.key === 'Escape') onClose() }
         document.addEventListener('keydown', handleEscape)
@@ -77,7 +98,7 @@ export default function LayananDrawer({ layanan, onClose, onOrder }) {
                     </div>
 
                     {/* Benefits */}
-                    <div className="bg-slate-50 rounded-2xl p-5">
+                    <div className="bg-slate-50 rounded-2xl p-5 mb-6">
                         <h3 className="text-sm font-bold text-slate-700 mb-3">Yang kamu dapatkan:</h3>
                         <ul className="space-y-2.5">
                             {[
@@ -93,6 +114,27 @@ export default function LayananDrawer({ layanan, onClose, onOrder }) {
                             ))}
                         </ul>
                     </div>
+
+                    {/* Reviews */}
+                    {reviews.length > 0 && (
+                        <div className="mb-6">
+                            <h3 className="text-sm font-bold text-slate-700 mb-3">Ulasan Klien Terbaru</h3>
+                            <div className="space-y-3">
+                                {reviews.map((r, i) => (
+                                    <div key={i} className="p-4 rounded-xl border border-slate-100 bg-white">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-semibold text-slate-800">{r.profiles?.full_name || 'Klien'}</span>
+                                            <div className="flex items-center gap-1">
+                                                <Star weight="fill" className="w-3.5 h-3.5 text-amber-500" />
+                                                <span className="text-xs font-bold text-slate-700">{r.rating}/5</span>
+                                            </div>
+                                        </div>
+                                        {r.review && <p className="text-sm text-slate-600 leading-relaxed">"{r.review}"</p>}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Sticky Footer CTA */}

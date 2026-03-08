@@ -197,7 +197,11 @@ export default function BuatOrder() {
                                 <div className="relative">
                                     <Calendar weight="bold" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                     <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)}
-                                        min={new Date().toISOString().split('T')[0]}
+                                        min={(() => {
+                                            const d = new Date()
+                                            if (layanan?.estimasi_hari) d.setDate(d.getDate() + layanan.estimasi_hari)
+                                            return d.toISOString().split('T')[0]
+                                        })()}
                                         className={inputClass + ' pl-11'} required />
                                 </div>
                             </div>
@@ -254,11 +258,30 @@ export default function BuatOrder() {
                             <div>
                                 <label className="block text-sm font-medium text-slate-600 mb-1.5">Lampiran Pendukung (opsional)</label>
                                 <label className="flex flex-col items-center justify-center p-5 rounded-xl border-2 border-dashed border-slate-200 hover:border-brand-300 cursor-pointer transition-all group">
-                                    <input type="file" multiple onChange={e => {
+                                    <input type="file" multiple onChange={async (e) => {
                                         const files = Array.from(e.target.files)
-                                        const valid = files.filter(f => f.size <= 10 * 1024 * 1024)
-                                        if (valid.length < files.length) toast.error('Beberapa file diabaikan (max 10MB per file)')
-                                        setAttachments(prev => [...prev, ...valid].slice(0, 5))
+                                        const processedFiles = []
+                                        const toastId = toast.info('Memproses file...', { autoClose: false })
+
+                                        for (let f of files) {
+                                            let fileToUpload = f
+                                            if (f.type.startsWith('image/') && f.size > 1024 * 1024) {
+                                                try {
+                                                    const { default: imageCompression } = await import('browser-image-compression')
+                                                    const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true }
+                                                    fileToUpload = await imageCompression(f, options)
+                                                } catch (err) {
+                                                    console.error('Compression error:', err)
+                                                }
+                                            }
+                                            if (fileToUpload.size <= 10 * 1024 * 1024) {
+                                                processedFiles.push(fileToUpload)
+                                            } else {
+                                                toast.error(`${f.name} terlalu besar (max 10MB)`)
+                                            }
+                                        }
+                                        toast.dismiss(toastId)
+                                        setAttachments(prev => [...prev, ...processedFiles].slice(0, 5))
                                     }} className="hidden" />
                                     <Paperclip weight="bold" className="w-6 h-6 text-slate-400 group-hover:text-brand-500 transition-colors mb-1.5" />
                                     <span className="text-sm text-slate-500 group-hover:text-slate-600 text-center">Klik untuk pilih file</span>

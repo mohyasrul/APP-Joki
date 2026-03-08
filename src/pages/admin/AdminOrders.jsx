@@ -195,6 +195,7 @@ export default function AdminOrders() {
                 hasil_files: allFiles,
                 hasil_url: allFiles.length > 0 ? allFiles[0].url : null,
                 catatan_hasil: uploadNote || null,
+                status_pekerjaan: 'Selesai',
             }).eq('id', uploadModal.id)
 
             toast.success(`${newFiles.length} file berhasil diupload!`)
