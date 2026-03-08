@@ -15,12 +15,17 @@ export default function ResetPassword() {
     const navigate = useNavigate()
 
     useEffect(() => {
-        // Cek apakah ada hash di URL (berasal dari email link)
+        // Cek apakah ada hash (Implicit) atau query (PKCE) di URL yang berkaitan dengan recovery
+        const hasRecoveryParams = window.location.hash.includes('type=recovery') || window.location.search.includes('code=')
+
         supabase.auth.getSession().then(({ data: { session }, error }) => {
-            if (error) setSessionError(error.message)
-            else if (!session && !window.location.hash) {
-                // Jika tidak ada session dan tidak ada hash (kode recovery), redirect
-                navigate('/login')
+            if (error) {
+                setSessionError(error.message)
+            } else if (!session && !hasRecoveryParams) {
+                // Beri sedikit delay untuk memastikan Supabase client selesai memproses auth
+                setTimeout(() => {
+                    navigate('/login')
+                }, 1500)
             }
         })
 
