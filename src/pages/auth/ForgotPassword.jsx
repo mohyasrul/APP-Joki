@@ -6,6 +6,7 @@ import { EnvelopeSimple, SpinnerGap, ArrowLeft } from '@phosphor-icons/react'
 
 export default function ForgotPassword() {
     const [email, setEmail] = useState('')
+    const [submittedEmail, setSubmittedEmail] = useState('')
     const [loading, setLoading] = useState(false)
     const [sent, setSent] = useState(false)
     const [cooldown, setCooldown] = useState(0) // Timer in seconds
@@ -25,19 +26,26 @@ export default function ForgotPassword() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        if (!email || cooldown > 0) return
+        const targetEmail = sent ? submittedEmail : email;
+        if (!targetEmail || cooldown > 0) return
         setLoading(true)
         try {
             // Validate email existence securely before initiating reset
-            const isExist = await checkEmailExists(email)
-            if (!isExist) {
-                toast.error('Tidak ada akun Jokskuy yang terdaftar dengan email ini.')
-                setLoading(false)
-                return
+            // We only need to validate it strictly on the first send since the Db doesn't change
+            if (!sent) {
+                const isExist = await checkEmailExists(targetEmail)
+                if (!isExist) {
+                    toast.error('Tidak ada akun Jokskuy yang terdaftar dengan email ini.')
+                    setLoading(false)
+                    return
+                }
             }
 
-            await resetPassword(email)
-            setSent(true)
+            await resetPassword(targetEmail)
+            if (!sent) {
+                setSubmittedEmail(targetEmail)
+                setSent(true)
+            }
             setCooldown(60) // Start 60-second cooldown
         } catch (err) {
             toast.error(err.message)
@@ -66,7 +74,7 @@ export default function ForgotPassword() {
                             </div>
                             <h3 className="text-lg font-bold text-slate-800 mb-2">Cek Email Anda</h3>
                             <p className="text-sm text-slate-600 mb-6">
-                                Kami telah mengirimkan link untuk mereset kata sandi ke <span className="font-semibold text-slate-800">{email}</span>. Link ini aktif selama 24 jam.
+                                Kami telah mengirimkan link untuk mereset kata sandi ke <span className="font-semibold text-slate-800">{submittedEmail}</span>. Link ini aktif selama 24 jam.
                             </p>
 
                             <div className="flex flex-col gap-3">
