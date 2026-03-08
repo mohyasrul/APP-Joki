@@ -5,7 +5,7 @@ import { BadgeProvider } from './contexts/BadgeContext'
 import { ToastProvider } from './components/Toast'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import Layout from './components/Layout'
 
 // Lazy-loaded pages — each becomes a separate chunk
