@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { BadgeProvider } from './contexts/BadgeContext'
@@ -41,6 +41,17 @@ function PageLoader() {
 
 function AppRoutes() {
   const { user, isAdmin, loading } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  // Intercept recovery links on any route (e.g. if Supabase defaults to Site URL)
+  // This prevents the user from being logged in and skipped past the reset form.
+  useEffect(() => {
+    const hasRecovery = location.hash.includes('type=recovery') || location.search.includes('code=');
+    if (hasRecovery && location.pathname !== '/reset-password') {
+      navigate('/reset-password' + location.search + location.hash, { replace: true });
+    }
+  }, [location, navigate]);
 
   if (loading) {
     return (

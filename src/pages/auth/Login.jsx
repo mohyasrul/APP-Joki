@@ -2,39 +2,16 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { SignIn, Envelope, Lock, Sparkle, WarningCircle, CheckCircle, Eye, EyeSlash } from '@phosphor-icons/react'
-import Modal from '../../components/Modal'
+import { SignIn, Envelope, Lock, Sparkle, WarningCircle, Eye, EyeSlash } from '@phosphor-icons/react'
 
 export default function Login() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
-    const [showForgot, setShowForgot] = useState(false)
-    const [forgotEmail, setForgotEmail] = useState('')
-    const [forgotLoading, setForgotLoading] = useState(false)
-    const [forgotSent, setForgotSent] = useState(false)
-    const [forgotError, setForgotError] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const { signIn } = useAuth()
     const navigate = useNavigate()
-
-    const handleForgotPassword = async (e) => {
-        e.preventDefault()
-        setForgotError('')
-        setForgotLoading(true)
-        try {
-            const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-                redirectTo: `${window.location.origin}/`
-            })
-            if (error) throw error
-            setForgotSent(true)
-        } catch (err) {
-            setForgotError(err.message)
-        } finally {
-            setForgotLoading(false)
-        }
-    }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
